@@ -65,10 +65,13 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .custom-play-btn:hover { background: var(--deep); transform: scale(1.05); }
 .custom-play-btn:active { transform: scale(0.96); }
 .custom-play-btn svg { width: 26px; height: 26px; }
-.custom-stream-badge { display: flex; align-items: center; gap: .6rem; }
-.station-name { font-weight: 800; font-size: 1.1rem; color: var(--deep); }
-.frequency-tag { padding: .2rem .55rem; border-radius: 999px; background: #eaf1fa; color: var(--blue); font-size: .75rem; font-weight: 800; letter-spacing: .05em; }
-.player-hint { color: #65758b; font-size: .85rem; margin: .3rem 0 0; }
+.custom-stream-badge { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
+.station-name { font-weight: 800; font-size: 1.15rem; color: var(--deep); }
+.stream-status-tag { display: inline-flex; align-items: center; gap: .35rem; padding: .22rem .65rem; border-radius: 999px; background: #eaf1fa; color: var(--blue); font-size: .78rem; font-weight: 700; letter-spacing: .02em; transition: all .2s ease; }
+.stream-status-tag.is-playing { background: #e6f6ee; color: #1a7f4b; }
+.stream-status-tag.is-connecting { background: #fff6e5; color: #b37400; }
+.stream-status-tag.is-error { background: #fdeeee; color: #c92a2a; }
+.player-subline { color: #62758f; font-size: .83rem; margin: .25rem 0 0; }
 
 .custom-volume-box { display: flex; align-items: center; gap: .8rem; padding: .6rem .9rem; background: #f6f9fc; border-radius: .7rem; border: 1px solid var(--line); }
 .custom-mute-btn { background: none; border: none; padding: 4px; color: var(--deep); cursor: pointer; display: flex; align-items: center; }

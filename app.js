@@ -29,9 +29,15 @@ if (audio && playBtn) {
 
   playBtn.addEventListener('click', () => {
     if (audio.paused) {
-      status.textContent = 'Conectando con la señal…';
+      if (status) {
+        status.textContent = 'Conectando con la señal…';
+        status.className = 'stream-status-tag is-connecting';
+      }
       audio.play().catch(() => {
-        status.textContent = 'No fue posible conectar. Prueba el reproductor por defecto abajo.';
+        if (status) {
+          status.textContent = 'Error al conectar';
+          status.className = 'stream-status-tag is-error';
+        }
       });
     } else {
       audio.pause();
@@ -67,25 +73,37 @@ if (audio && playBtn) {
     if (iconPlay) iconPlay.style.display = 'none';
     if (iconPause) iconPause.style.display = 'block';
     if (eqBars) eqBars.classList.add('is-playing');
-    if (status) status.textContent = 'Conectado · Señal en directo.';
+    if (status) {
+      status.textContent = 'Conectado · Señal en directo';
+      status.className = 'stream-status-tag is-playing';
+    }
   });
 
   audio.addEventListener('waiting', () => {
-    if (status) status.textContent = 'Conectando con la señal…';
+    if (status) {
+      status.textContent = 'Conectando con la señal…';
+      status.className = 'stream-status-tag is-connecting';
+    }
   });
 
   audio.addEventListener('pause', () => {
     if (iconPlay) iconPlay.style.display = 'block';
     if (iconPause) iconPause.style.display = 'none';
     if (eqBars) eqBars.classList.remove('is-playing');
-    if (status) status.textContent = 'Señal en pausa.';
+    if (status) {
+      status.textContent = 'Señal en pausa';
+      status.className = 'stream-status-tag';
+    }
   });
 
   audio.addEventListener('error', () => {
     if (iconPlay) iconPlay.style.display = 'block';
     if (iconPause) iconPause.style.display = 'none';
     if (eqBars) eqBars.classList.remove('is-playing');
-    if (status) status.textContent = 'No fue posible conectar. Prueba el reproductor alternativo abajo.';
+    if (status) {
+      status.textContent = 'Error al conectar';
+      status.className = 'stream-status-tag is-error';
+    }
   });
 }
 
