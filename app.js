@@ -105,7 +105,105 @@ if (audio && playBtn) {
       status.className = 'stream-status-tag is-error';
     }
   });
+
+  // MediaSession API para controles del sistema operativo (móvil, teclado, pantalla de bloqueo)
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => { audio.play().catch(() => {}); });
+    navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); });
+  }
 }
+
+// --- CONSULTA EN VIVO DEL TEMA SONANDO (METADATA SHOUTCAST VÍA JSONP) ---
+const trackTitleEl = document.querySelector('#track-title');
+const trackBoxEl = document.querySelector('#now-playing-box');
+let currentTrackTitle = '';
+let metaPollInterval = null;
+
+function updateNowPlaying(rawTitle) {
+  if (!rawTitle) return;
+  const cleaned = rawTitle.trim();
+  if (!cleaned) return;
+
+  if (cleaned !== currentTrackTitle) {
+    currentTrackTitle = cleaned;
+    if (trackTitleEl) {
+      trackTitleEl.style.opacity = '0';
+      setTimeout(() => {
+        trackTitleEl.textContent = cleaned;
+        trackTitleEl.setAttribute('title', cleaned);
+        trackTitleEl.style.opacity = '1';
+      }, 150);
+    }
+    if (trackBoxEl) {
+      trackBoxEl.classList.add('is-live');
+    }
+
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: cleaned,
+          artist: 'Rinconada Stereo',
+          album: 'Señal en directo · La Pacha',
+          artwork: [
+            { src: 'assets/logo.png', sizes: '512x512', type: 'image/png' }
+          ]
+        });
+      } catch (e) {
+        // En navegadores con soporte parcial de MediaSession
+      }
+    }
+  }
+}
+
+function fetchLiveTrack() {
+  const cbName = 'rs_meta_cb_' + Math.floor(Math.random() * 1000000);
+  const script = document.createElement('script');
+  
+  const timer = setTimeout(() => {
+    cleanup();
+  }, 6000);
+
+  function cleanup() {
+    clearTimeout(timer);
+    if (window[cbName]) {
+      try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+    }
+    if (script.parentNode) {
+      script.parentNode.removeChild(script);
+    }
+  }
+
+  window[cbName] = function(data) {
+    cleanup();
+    if (data && data.songtitle) {
+      updateNowPlaying(data.songtitle);
+    }
+  };
+
+  script.onerror = function() {
+    cleanup();
+  };
+
+  script.src = `https://play14.tikast.com:22012/stats?sid=1&json=1&callback=${cbName}&_t=${Date.now()}`;
+  document.head.appendChild(script);
+}
+
+// Iniciar sondeo de metadatos (inmediato y periódico)
+fetchLiveTrack();
+metaPollInterval = setInterval(fetchLiveTrack, 8000);
+
+// Ahorro de recursos si la pestaña pasa a segundo plano
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (metaPollInterval) clearInterval(metaPollInterval);
+    // Sondeo lento en segundo plano (cada 30s)
+    metaPollInterval = setInterval(fetchLiveTrack, 30000);
+  } else {
+    if (metaPollInterval) clearInterval(metaPollInterval);
+    fetchLiveTrack();
+    metaPollInterval = setInterval(fetchLiveTrack, 8000);
+  }
+});
 
 // Respaldo de iframe virtualtronics en details
 const alternate = document.querySelector('#alternate-player');
