@@ -95,7 +95,7 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .fish-tag { color: var(--blue); }
 .fish-caption { margin: .2rem 0 0; color: #576d8a; font-size: .84rem; font-weight: 600; }
 .fish-icon { font-size: 1rem; color: var(--blue); }
-.canvas-wrapper { position: relative; width: 100%; height: 165px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: pointer; touch-action: none; }
+.canvas-wrapper { position: relative; width: 100%; height: 225px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: pointer; touch-action: none; }
 #fish-canvas { width: 100%; height: 100%; display: block; }
 
 /* SECCIÓN 02 / EN LA EMISORA */
@@ -153,7 +153,7 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .hero-listen-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 1.2rem; }
   .hero-listen h1 { font-size: clamp(2.8rem, 11vw, 4.2rem); max-width: 100%; }
   
-  .canvas-wrapper { height: 135px; }
+  .canvas-wrapper { height: 185px; }
   .schedule-bottom, .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
   .schedule-section, .contact-section { padding-bottom: 4rem; }
   .section-heading { align-items: start; flex-direction: column; gap: 0; }
@@ -166,7 +166,7 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .hero-listen h1 { font-size: 2.6rem; }
   .player-card { padding: 1.3rem; }
   .chat-card { padding: 1.1rem; }
-  .canvas-wrapper { height: 120px; }
+  .canvas-wrapper { height: 165px; }
   footer p { order: 3; width: 100%; }
 }
 

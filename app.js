@@ -203,8 +203,57 @@ if (weatherSection && 'IntersectionObserver' in window) {
   let animationId = null;
   let isRunning = false;
 
-  const fishCount = 9;
-  const fishPalette = ['#163c68', '#26548d', '#3676ce', '#d89e34', '#1f4879'];
+  const fishCount = 12; // 20%+ más peces (antes 9)
+  
+  // Catálogo de especies autóctonas con variedad de formas, colores y nado
+  const fishSpecies = [
+    {
+      name: 'bocachico',
+      colors: ['#1c4575', '#285e9e', '#3676ce'],
+      sizeRange: [26, 42],
+      bodyAspect: 0.27,
+      tailType: 'swallow',
+      speedMult: 1.0,
+      wagMult: 1.0
+    },
+    {
+      name: 'dorada',
+      colors: ['#d48b1c', '#e8a531', '#f5bf4e'],
+      sizeRange: [30, 46],
+      bodyAspect: 0.32,
+      tailType: 'fan',
+      speedMult: 1.08,
+      wagMult: 1.15
+    },
+    {
+      name: 'sardina',
+      colors: ['#4a82bf', '#6ea4e2', '#8fc3fa'],
+      sizeRange: [15, 23],
+      bodyAspect: 0.20,
+      tailType: 'swift',
+      speedMult: 1.35,
+      wagMult: 1.45
+    },
+    {
+      name: 'mojarra',
+      colors: ['#193a61', '#245084', '#326ba8'],
+      sizeRange: [32, 48],
+      bodyAspect: 0.38,
+      tailType: 'rounded',
+      speedMult: 0.85,
+      wagMult: 0.9
+    },
+    {
+      name: 'bagrecito',
+      colors: ['#15263a', '#1d3654', '#2a4a6e'],
+      sizeRange: [30, 45],
+      bodyAspect: 0.23,
+      tailType: 'tapered',
+      hasBarbels: true,
+      speedMult: 0.9,
+      wagMult: 0.95
+    }
+  ];
 
   const fishList = [];
   const ripples = [];
@@ -220,17 +269,25 @@ if (weatherSection && 'IntersectionObserver' in window) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function createFish() {
+  function createFish(index) {
+    const sp = fishSpecies[index % fishSpecies.length];
+    const baseSize = sp.sizeRange[0] + Math.random() * (sp.sizeRange[1] - sp.sizeRange[0]);
+    const color = sp.colors[Math.floor(Math.random() * sp.colors.length)];
+
     return {
+      name: sp.name,
       x: Math.random() * (width || 600),
-      y: Math.random() * (height || 160),
-      vx: (Math.random() - 0.5) * 1.5,
-      vy: (Math.random() - 0.5) * 0.8,
-      speed: 1.1 + Math.random() * 0.9,
-      size: 20 + Math.random() * 18,
-      color: fishPalette[Math.floor(Math.random() * fishPalette.length)],
+      y: Math.random() * (height || 220),
+      vx: (Math.random() - 0.5) * 1.5 * sp.speedMult,
+      vy: (Math.random() - 0.5) * 0.8 * sp.speedMult,
+      speed: (1.1 + Math.random() * 0.8) * sp.speedMult,
+      size: baseSize,
+      bodyAspect: sp.bodyAspect,
+      tailType: sp.tailType,
+      hasBarbels: !!sp.hasBarbels,
+      color: color,
       wagPhase: Math.random() * Math.PI * 2,
-      wagSpeed: 0.12 + Math.random() * 0.08,
+      wagSpeed: (0.12 + Math.random() * 0.08) * sp.wagMult,
       angle: 0
     };
   }
@@ -238,7 +295,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
   function initFish() {
     fishList.length = 0;
     for (let i = 0; i < fishCount; i++) {
-      fishList.push(createFish());
+      fishList.push(createFish(i));
     }
   }
 
@@ -368,30 +425,96 @@ if (weatherSection && 'IntersectionObserver' in window) {
     ctx.rotate(f.angle);
 
     const s = f.size;
+    const aspect = f.bodyAspect || 0.28;
     const wag = Math.sin(f.wagPhase) * (s * 0.22);
 
     ctx.fillStyle = f.color;
-    ctx.beginPath();
-    // Cuerpo hidrodinámico
-    ctx.moveTo(s * 0.6, 0);
-    ctx.quadraticCurveTo(0, -s * 0.28, -s * 0.5, 0);
-    ctx.quadraticCurveTo(0, s * 0.28, s * 0.6, 0);
-    ctx.fill();
 
-    // Aleta caudal
+    // Aleta dorsal superior
     ctx.beginPath();
-    ctx.moveTo(-s * 0.45, 0);
-    ctx.lineTo(-s * 0.85, -s * 0.25 + wag);
-    ctx.lineTo(-s * 0.7, wag * 0.5);
-    ctx.lineTo(-s * 0.85, s * 0.25 + wag);
+    ctx.moveTo(s * 0.05, -s * aspect * 0.9);
+    ctx.lineTo(-s * 0.2, -s * (aspect * 1.55));
+    ctx.lineTo(-s * 0.35, -s * aspect * 0.8);
     ctx.closePath();
     ctx.fill();
 
-    // Reflejo dorsal
+    // Aleta pectoral lateral
+    ctx.beginPath();
+    ctx.moveTo(s * 0.2, s * aspect * 0.6);
+    ctx.lineTo(s * 0.05, s * (aspect * 1.45));
+    ctx.lineTo(0, s * aspect * 0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    // Cuerpo adaptado a la especie
+    ctx.beginPath();
+    ctx.moveTo(s * 0.6, 0);
+    ctx.quadraticCurveTo(0, -s * aspect, -s * 0.5, 0);
+    ctx.quadraticCurveTo(0, s * aspect, s * 0.6, 0);
+    ctx.fill();
+
+    // Aleta caudal diferenciada por especie
+    ctx.beginPath();
+    if (f.tailType === 'swallow') {
+      // Cola ahorquillada en V profunda (Bocachico)
+      ctx.moveTo(-s * 0.45, 0);
+      ctx.lineTo(-s * 0.95, -s * 0.32 + wag);
+      ctx.lineTo(-s * 0.65, wag * 0.5);
+      ctx.lineTo(-s * 0.95, s * 0.32 + wag);
+      ctx.closePath();
+    } else if (f.tailType === 'fan') {
+      // Cola en abanico amplio redondeado (Dorada)
+      ctx.moveTo(-s * 0.45, 0);
+      ctx.quadraticCurveTo(-s * 0.88, -s * 0.38 + wag, -s * 0.82, wag);
+      ctx.quadraticCurveTo(-s * 0.88, s * 0.38 + wag, -s * 0.45, 0);
+    } else if (f.tailType === 'rounded') {
+      // Cola ancha de paleta (Mojarra)
+      ctx.moveTo(-s * 0.45, -s * 0.12);
+      ctx.lineTo(-s * 0.85, -s * 0.3 + wag);
+      ctx.quadraticCurveTo(-s * 0.92, wag, -s * 0.85, s * 0.3 + wag);
+      ctx.lineTo(-s * 0.45, s * 0.12);
+      ctx.closePath();
+    } else {
+      // Cola veloz / ahusada (Sardina / Bagrecito)
+      ctx.moveTo(-s * 0.45, 0);
+      ctx.lineTo(-s * 0.82, -s * 0.22 + wag);
+      ctx.lineTo(-s * 0.68, wag * 0.4);
+      ctx.lineTo(-s * 0.82, s * 0.22 + wag);
+      ctx.closePath();
+    }
+    ctx.fill();
+
+    // Barbillones / bigotes si es bagrecito
+    if (f.hasBarbels) {
+      ctx.strokeStyle = f.color;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(s * 0.55, -s * 0.04);
+      ctx.quadraticCurveTo(s * 0.75, -s * 0.14, s * 0.86, -s * 0.08);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(s * 0.55, s * 0.04);
+      ctx.quadraticCurveTo(s * 0.75, s * 0.14, s * 0.86, s * 0.08);
+      ctx.stroke();
+    }
+
+    // Ojo con brillo
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s * 0.38, -s * (aspect * 0.35), s * 0.065, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#0f1f33';
+    ctx.beginPath();
+    ctx.arc(s * 0.4, -s * (aspect * 0.35), s * 0.038, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Reflejo dorsal plateado / dorado
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(s * 0.1, -s * 0.05, s * 0.2, -0.4, 0.8);
+    ctx.arc(s * 0.1, -s * (aspect * 0.15), s * 0.22, -0.4, 0.8);
     ctx.stroke();
 
     ctx.restore();
