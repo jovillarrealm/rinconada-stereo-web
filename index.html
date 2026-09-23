@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#3676ce">
+    <meta name="description" content="Rinconada Stereo: escucha nuestra señal en vivo desde la ciénaga La Rinconada, cerca de La Pacha, Magdalena.">
+    <title>Rinconada Stereo — La señal del territorio</title>
+    <link rel="icon" href="assets/logo-rinconada.png">
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenido">Ir al contenido</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#inicio" aria-label="Rinconada Stereo, ir al inicio">
+          <img src="assets/logo-rinconada.png" width="300" height="133" alt="Rinconada Stereo">
+        </a>
+        <nav aria-label="Principal">
+          <a href="#inicio">Inicio</a>
+          <a href="#programacion">Programación</a>
+          <a href="#contacto">Contacto</a>
+        </nav>
+        <a class="header-chat" href="#chat">Conversar <span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+
+    <main id="contenido">
+      <section class="hero" id="inicio" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> Emisora comunitaria · Magdalena</p>
+          <h1 id="hero-title">La voz de nuestro <em>territorio.</em></h1>
+          <p class="lead">Desde la ciénaga La Rinconada, cerca de La Pacha. Una señal para escuchar, encontrarnos y seguir cerca.</p>
+          <div class="hero-actions">
+            <a class="primary-action" href="#reproductor">Escuchar en vivo <span aria-hidden="true">↗</span></a>
+            <a class="text-action" href="#chat">Entrar al chat <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <span class="ring ring-one"></span>
+          <span class="ring ring-two"></span>
+          <span class="ring ring-three"></span>
+          <span class="art-label">LA RINCONADA<br>ESTÁ AL AIRE</span>
+          <span class="art-star">✳</span>
+        </div>
+      </section>
+
+      <section class="listen-section" id="reproductor" aria-labelledby="listen-title">
+        <div class="section-number">01 / LA SEÑAL</div>
+        <div class="listen-layout">
+          <div class="listen-primary">
+            <p class="kicker">En vivo</p>
+            <h2 id="listen-title">Dale play. <span>Estás en casa.</span></h2>
+            <p>Escucha nuestra señal y conversa con quienes están al otro lado. Si el control no conecta en tu dispositivo, usa el reproductor alternativo.</p>
+            <div class="player-card">
+              <div class="player-card-top"><span class="live-dot" aria-hidden="true"></span> SEÑAL EN DIRECTO <span class="signal-lines" aria-hidden="true">▂▄▆▄▂</span></div>
+              <audio id="radio" controls preload="none" aria-label="Señal en vivo de Rinconada Stereo" src="https://play14.tikast.com:22012/stream"></audio>
+              <p id="audio-status" class="player-hint" role="status">Pulsa reproducir para conectar.</p>
+              <details id="alternate-player">
+                <summary>Usar reproductor alternativo</summary>
+                <div id="alternate-frame"></div>
+                <p><a href="https://virtualtronics.com/streaming/customers/rinconadastereo/player.php?type=big" target="_blank" rel="noopener noreferrer">Abrir el reproductor en otra pestaña ↗</a></p>
+              </details>
+            </div>
+          </div>
+          <aside class="chat-card" id="chat" aria-labelledby="chat-title">
+            <p class="kicker">La conversación</p>
+            <h3 id="chat-title">Chat en vivo</h3>
+            <p>Haz parte de la conversación mientras escuchas.</p>
+            <iframe src="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs" title="Chat de Rinconada Stereo en Cbox" width="100%" height="450" loading="lazy" allow="autoplay"></iframe>
+            <a class="chat-direct" href="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs" target="_blank" rel="noopener noreferrer">Abrir el chat en otra pestaña ↗</a>
+          </aside>
+        </div>
+      </section>
+      <section class="schedule-section" id="programacion" aria-labelledby="schedule-title">
+        <div class="section-number">02 / EN LA EMISORA</div>
+        <div class="section-heading">
+          <div><p class="kicker">Programación</p><h2 id="schedule-title">Siempre hay algo <em>sonando.</em></h2></div>
+          <span class="status-pill">En actualización</span>
+        </div>
+        <div class="schedule-bottom">
+          <div class="schedule-note">
+            <span aria-hidden="true">↗</span>
+            <p>Estamos revisando los horarios para publicar una programación vigente. Mientras tanto, la señal en vivo sigue disponible.</p>
+          </div>
+          <aside class="weather-inline" aria-label="Pronóstico regional">
+            <p class="weather-caption">Clima estimado · Ciénaga La Rinconada, cerca de La Pacha</p>
+            <a class="weatherwidget-io" href="https://forecast7.com/es/9d24n74d35/san-sebastian-de-buenavista/" data-label_1="CIÉNAGA LA RINCONADA" data-label_2="LA PACHA, MAGDALENA" data-icons="Climacons Animated" data-mode="Current" data-days="3" data-theme="metallic">Ver pronóstico regional</a>
+            <a class="weather-source" href="https://forecast7.com/es/9d24n74d35/san-sebastian-de-buenavista/">Pronóstico de Forecast7 ↗</a>
+          </aside>
+        </div>
+      </section>
+      <section class="contact-section" id="contacto" aria-labelledby="contact-title">
+        <div class="section-number">03 / SIGAMOS EN CONTACTO</div>
+        <div class="contact-layout">
+          <div><p class="kicker">Hablemos</p><h2 id="contact-title">La radio se hace <em>entre todos.</em></h2></div>
+          <div class="contact-links">
+            <a href="mailto:info@rinconadastereo.com">Escríbenos por correo <span aria-hidden="true">↗</span></a>
+            <a href="https://wa.me/573007874720">Conversemos por WhatsApp <span aria-hidden="true">↗</span></a>
+            <a href="#chat">Entra al chat en vivo <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer><img src="assets/logo-rinconada.png" width="300" height="133" alt=""><p>Desde La Rinconada, Magdalena. Hecho para estar cerca.</p><a href="#inicio">Volver arriba ↑</a></footer>
+
+
+  </body>
+</html>
+
+
+
+
