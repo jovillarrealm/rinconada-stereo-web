@@ -221,14 +221,14 @@ if (weatherSection && 'IntersectionObserver' in window) {
   let animationId = null;
   let isRunning = false;
 
-  const fishCount = 12; // 20%+ más peces (antes 9)
+  const fishCount = 14; // 15%+ más peces (antes 12)
   
-  // Catálogo de especies autóctonas con variedad de formas, colores y nado
+  // Catálogo ampliado a 8 especies autóctonas con gran variedad morfológica y cromática
   const fishSpecies = [
     {
       name: 'bocachico',
       colors: ['#1c4575', '#285e9e', '#3676ce'],
-      sizeRange: [26, 42],
+      sizeRange: [28, 44],
       bodyAspect: 0.27,
       tailType: 'swallow',
       speedMult: 1.0,
@@ -244,27 +244,54 @@ if (weatherSection && 'IntersectionObserver' in window) {
       wagMult: 1.15
     },
     {
+      name: 'tilapia_roja',
+      colors: ['#d64627', '#e86548', '#f28a6f'],
+      sizeRange: [28, 44],
+      bodyAspect: 0.36,
+      tailType: 'fan',
+      speedMult: 1.12,
+      wagMult: 1.2
+    },
+    {
       name: 'sardina',
       colors: ['#4a82bf', '#6ea4e2', '#8fc3fa'],
       sizeRange: [15, 23],
-      bodyAspect: 0.20,
+      bodyAspect: 0.19,
       tailType: 'swift',
-      speedMult: 1.35,
+      speedMult: 1.38,
       wagMult: 1.45
     },
     {
       name: 'mojarra',
       colors: ['#193a61', '#245084', '#326ba8'],
-      sizeRange: [32, 48],
-      bodyAspect: 0.38,
+      sizeRange: [32, 50],
+      bodyAspect: 0.39,
       tailType: 'rounded',
       speedMult: 0.85,
       wagMult: 0.9
     },
     {
+      name: 'pacora',
+      colors: ['#425e30', '#5c8042', '#7fa35e'],
+      sizeRange: [27, 42],
+      bodyAspect: 0.28,
+      tailType: 'rounded',
+      speedMult: 0.95,
+      wagMult: 1.02
+    },
+    {
+      name: 'arenca',
+      colors: ['#6e92b8', '#9bbbdc', '#cae0f5'],
+      sizeRange: [20, 32],
+      bodyAspect: 0.21,
+      tailType: 'swallow',
+      speedMult: 1.25,
+      wagMult: 1.3
+    },
+    {
       name: 'bagrecito',
       colors: ['#15263a', '#1d3654', '#2a4a6e'],
-      sizeRange: [30, 45],
+      sizeRange: [32, 48],
       bodyAspect: 0.23,
       tailType: 'tapered',
       hasBarbels: true,
@@ -295,7 +322,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     return {
       name: sp.name,
       x: Math.random() * (width || 600),
-      y: Math.random() * (height || 220),
+      y: Math.random() * (height || 280),
       vx: (Math.random() - 0.5) * 1.5 * sp.speedMult,
       vy: (Math.random() - 0.5) * 0.8 * sp.speedMult,
       speed: (1.1 + Math.random() * 0.8) * sp.speedMult,
