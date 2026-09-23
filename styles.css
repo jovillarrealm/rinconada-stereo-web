@@ -17,12 +17,13 @@ a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visibl
 .skip-link { position: absolute; left: 1rem; top: -5rem; z-index: 10; padding: .7rem; background: white; }
 .skip-link:focus { top: 1rem; }
 
-.site-header { background: var(--blue); color: white; }
-.header-inner { max-width: 1320px; min-height: 90px; margin: auto; padding: 1rem clamp(1.2rem, 4vw, 4.5rem); display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
-.brand img { display: block; width: 148px; height: auto; }
-.site-header nav { display: flex; gap: clamp(1rem, 3vw, 2.4rem); }
-.site-header nav a { font-size: .88rem; font-weight: 700; text-decoration: none; }
-.site-header nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.site-header { background: var(--blue); color: white; padding: 1.4rem 0 1.1rem; }
+.header-inner { max-width: 1320px; margin: auto; padding: 0 clamp(1.2rem, 4vw, 4.5rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; }
+.brand { display: inline-flex; justify-content: center; }
+.brand img { display: block; width: clamp(220px, 28vw, 300px); height: auto; filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.12)); }
+.site-header nav { display: flex; justify-content: center; gap: clamp(1.4rem, 3.5vw, 2.6rem); }
+.site-header nav a { font-size: .92rem; font-weight: 700; text-decoration: none; opacity: .92; transition: opacity .15s ease; }
+.site-header nav a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 5px; }
 main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 
 /* 01 / SECCIÓN UNIFICADA: HERO + ESCUCHA (SIN SCROLL) */
@@ -161,10 +162,10 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
 
 /* RESPONSIVE DESIGN */
 @media (max-width: 800px) {
-  .header-inner { min-height: 75px; flex-wrap: wrap; gap: .8rem; }
-  .brand img { width: 110px; }
-  .site-header nav { order: 3; width: 100%; justify-content: space-between; gap: .8rem; }
-  .site-header nav a { font-size: .78rem; }
+  .header-inner { min-height: auto; flex-direction: column; align-items: center; gap: .85rem; padding: 0 1rem; }
+  .brand img { width: clamp(180px, 48vw, 230px); }
+  .site-header nav { width: 100%; justify-content: center; gap: 1.4rem; }
+  .site-header nav a { font-size: .84rem; }
   
   /* En móvil, el reproductor queda encima sin scroll */
   .hero-listen { padding: 1.8rem 1.2rem 2.8rem; }
