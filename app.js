@@ -1,13 +1,95 @@
-// --- AUDIO Y REPRODUCTOR ALTERNATIVO ---
+// --- REPRODUCTOR CUSTOMIZADO Y SINCRONIZACIÓN ---
 const audio = document.querySelector('#radio');
 const status = document.querySelector('#audio-status');
+const playBtn = document.querySelector('#play-btn');
+const iconPlay = playBtn ? playBtn.querySelector('.icon-play') : null;
+const iconPause = playBtn ? playBtn.querySelector('.icon-pause') : null;
+const muteBtn = document.querySelector('#mute-btn');
+const iconVolOn = muteBtn ? muteBtn.querySelector('.icon-vol-on') : null;
+const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
+const volumeSlider = document.querySelector('#volume-slider');
+const eqBars = document.querySelector('#eq-bars');
 
-if (audio && status) {
-  audio.addEventListener('playing', () => { status.textContent = 'Conectado a la señal en vivo.'; });
-  audio.addEventListener('waiting', () => { status.textContent = 'Conectando con la señal…'; });
-  audio.addEventListener('error', () => { status.textContent = 'No fue posible conectar. Prueba el reproductor alternativo.'; });
+function updateMuteIcons() {
+  if (!iconVolOn || !iconVolMute) return;
+  if (audio.muted || audio.volume === 0) {
+    iconVolOn.style.display = 'none';
+    iconVolMute.style.display = 'block';
+  } else {
+    iconVolOn.style.display = 'block';
+    iconVolMute.style.display = 'none';
+  }
 }
 
+if (audio && playBtn) {
+  // Inicializar volumen
+  if (volumeSlider) {
+    audio.volume = parseFloat(volumeSlider.value);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (audio.paused) {
+      status.textContent = 'Conectando con la señal…';
+      audio.play().catch(() => {
+        status.textContent = 'No fue posible conectar. Prueba el reproductor por defecto abajo.';
+      });
+    } else {
+      audio.pause();
+    }
+  });
+
+  if (volumeSlider) {
+    volumeSlider.addEventListener('input', () => {
+      audio.volume = parseFloat(volumeSlider.value);
+      audio.muted = (audio.volume === 0);
+      updateMuteIcons();
+    });
+  }
+
+  if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+      audio.muted = !audio.muted;
+      if (!audio.muted && audio.volume === 0) {
+        audio.volume = 0.5;
+        if (volumeSlider) volumeSlider.value = 0.5;
+      }
+      updateMuteIcons();
+    });
+  }
+
+  audio.addEventListener('play', () => {
+    if (iconPlay) iconPlay.style.display = 'none';
+    if (iconPause) iconPause.style.display = 'block';
+    if (eqBars) eqBars.classList.add('is-playing');
+  });
+
+  audio.addEventListener('playing', () => {
+    if (iconPlay) iconPlay.style.display = 'none';
+    if (iconPause) iconPause.style.display = 'block';
+    if (eqBars) eqBars.classList.add('is-playing');
+    if (status) status.textContent = 'Conectado · Señal en directo.';
+  });
+
+  audio.addEventListener('waiting', () => {
+    if (status) status.textContent = 'Conectando con la señal…';
+  });
+
+  audio.addEventListener('pause', () => {
+    if (iconPlay) iconPlay.style.display = 'block';
+    if (iconPause) iconPause.style.display = 'none';
+    if (eqBars) eqBars.classList.remove('is-playing');
+    if (status) status.textContent = 'Señal en pausa.';
+  });
+
+  audio.addEventListener('error', () => {
+    if (iconPlay) iconPlay.style.display = 'block';
+    if (iconPause) iconPause.style.display = 'none';
+    if (eqBars) eqBars.classList.remove('is-playing');
+    if (status) status.textContent = 'No fue posible conectar. Prueba el reproductor alternativo abajo.';
+  });
+}
+
+// Respaldo de iframe virtualtronics en details
 const alternate = document.querySelector('#alternate-player');
 if (alternate) {
   alternate.addEventListener('toggle', () => {
@@ -22,11 +104,10 @@ if (alternate) {
   });
 }
 
-// --- CLIMA NATIVO REGIONAL CON OPEN-METEO ---
+// --- CLIMA NATIVO REGIONAL CON OPEN-METEO (LA PACHA PROMINENTE) ---
 const weatherCard = document.querySelector('#weather-card');
 
 function getWeatherInterpretation(code) {
-  // Mapeo WMO de códigos meteorológicos a descripción e icono SVG
   if (code === 0) {
     return {
       desc: 'Cielo despejado',
@@ -74,8 +155,9 @@ async function loadOpenMeteoWeather() {
 
     weatherCard.innerHTML = `
       <div class="weather-main">
-        <div>
+        <div class="weather-temp-group">
           <div class="weather-temp">${Math.round(current.temperature_2m)}°C</div>
+          <div class="weather-location-highlight">La Pacha, <span>Magdalena</span></div>
           <div class="weather-desc">${info.desc}</div>
         </div>
         <div class="weather-icon-box" aria-hidden="true">${info.icon}</div>
@@ -107,7 +189,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
   loadOpenMeteoWeather();
 }
 
-// --- LA CIÉNAGA INTERACTIVA: PECES EN CANVAS 2D ---
+// --- LA CIÉNAGA INTERACTIVA: ALIMENTAR A LOS PECES EN CANVAS 2D ---
 (function initFishPond() {
   const canvas = document.querySelector('#fish-canvas');
   if (!canvas) return;
@@ -121,11 +203,12 @@ if (weatherSection && 'IntersectionObserver' in window) {
   let animationId = null;
   let isRunning = false;
 
-  const fishCount = 8;
+  const fishCount = 9;
   const fishPalette = ['#163c68', '#26548d', '#3676ce', '#d89e34', '#1f4879'];
 
   const fishList = [];
   const ripples = [];
+  const foodCrumbs = [];
   let pointer = { x: -1000, y: -1000, active: false };
 
   function resize() {
@@ -141,14 +224,13 @@ if (weatherSection && 'IntersectionObserver' in window) {
     return {
       x: Math.random() * (width || 600),
       y: Math.random() * (height || 160),
-      vx: (Math.random() - 0.5) * 1.6,
+      vx: (Math.random() - 0.5) * 1.5,
       vy: (Math.random() - 0.5) * 0.8,
       speed: 1.1 + Math.random() * 0.9,
       size: 20 + Math.random() * 18,
       color: fishPalette[Math.floor(Math.random() * fishPalette.length)],
       wagPhase: Math.random() * Math.PI * 2,
       wagSpeed: 0.12 + Math.random() * 0.08,
-      targetAngle: 0,
       angle: 0
     };
   }
@@ -160,29 +242,96 @@ if (weatherSection && 'IntersectionObserver' in window) {
     }
   }
 
+  function dropFood(x, y) {
+    // Al hacer clic, se lanzan 3 a 5 partículas de alimento
+    const count = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < count; i++) {
+      foodCrumbs.push({
+        x: x + (Math.random() - 0.5) * 22,
+        y: y + (Math.random() - 0.5) * 18,
+        r: 2 + Math.random() * 1.2,
+        life: 1.0,
+        vy: 0.12 + Math.random() * 0.1
+      });
+    }
+    ripples.push({ x: x, y: y, radius: 4, alpha: 0.6 });
+  }
+
   function update() {
-    const pad = 40;
+    const pad = 35;
+
+    // Actualizar migajas de alimento
+    for (let i = foodCrumbs.length - 1; i >= 0; i--) {
+      const c = foodCrumbs[i];
+      c.y += c.vy;
+      c.life -= 0.003;
+      if (c.life <= 0 || c.y > height - 10) {
+        foodCrumbs.splice(i, 1);
+      }
+    }
+
+    // Actualizar peces
     for (const f of fishList) {
       f.wagPhase += f.wagSpeed;
 
-      // Reacción al cursor / touch
-      if (pointer.active) {
-        const dx = f.x - pointer.x;
-        const dy = f.y - pointer.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < 90 && dist > 1) {
-          const force = (90 - dist) / 90 * 0.5;
-          f.vx += (dx / dist) * force;
-          f.vy += (dy / dist) * force;
+      // 1. Si hay comida en el agua, los peces van directamente hacia la migaja más cercana
+      let targetCrumb = null;
+      let minCrumbDist = 9999;
+      for (let i = 0; i < foodCrumbs.length; i++) {
+        const c = foodCrumbs[i];
+        const d = Math.hypot(c.x - f.x, c.y - f.y);
+        if (d < minCrumbDist) {
+          minCrumbDist = d;
+          targetCrumb = { crumb: c, index: i, dist: d };
         }
       }
 
-      // Suave fricción y control de velocidad máxima
+      if (targetCrumb) {
+        const dx = targetCrumb.crumb.x - f.x;
+        const dy = targetCrumb.crumb.y - f.y;
+        const dist = targetCrumb.dist;
+
+        if (dist > 10) {
+          f.vx += (dx / dist) * 0.35;
+          f.vy += (dy / dist) * 0.35;
+          f.wagSpeed = 0.22; // Nado emocionado hacia el alimento
+        } else {
+          // El pez se come la migaja
+          foodCrumbs.splice(targetCrumb.index, 1);
+          ripples.push({ x: f.x, y: f.y, radius: 2, alpha: 0.4 });
+          f.vx *= 0.5;
+          f.vy *= 0.5;
+        }
+      } 
+      // 2. Si no hay comida pero el cursor está en el estanque, los peces se acercan al cursor como esperando comida
+      else if (pointer.active) {
+        const dx = pointer.x - f.x;
+        const dy = pointer.y - f.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 28 && dist < 240) {
+          // Atracción suave hacia la mano / cursor
+          const pull = 0.22;
+          f.vx += (dx / dist) * pull;
+          f.vy += (dy / dist) * pull;
+          f.wagSpeed = 0.17;
+        } else if (dist <= 28) {
+          // Dan vueltas alrededor del cursor esperando alimento
+          f.vx += (-dy / (dist || 1)) * 0.4;
+          f.vy += (dx / (dist || 1)) * 0.4;
+          f.wagSpeed = 0.14;
+        }
+      } else {
+        f.wagSpeed = 0.11;
+      }
+
+      // Fricción y límite de velocidad
       const curSpeed = Math.hypot(f.vx, f.vy);
-      if (curSpeed > f.speed * 2.2) {
-        f.vx *= 0.95;
-        f.vy *= 0.95;
-      } else if (curSpeed < 0.6) {
+      const maxSpeed = (foodCrumbs.length > 0 || pointer.active) ? f.speed * 2.3 : f.speed * 1.5;
+      if (curSpeed > maxSpeed) {
+        f.vx *= 0.94;
+        f.vy *= 0.94;
+      } else if (curSpeed < 0.5) {
         f.vx += (Math.random() - 0.5) * 0.2;
         f.vy += (Math.random() - 0.5) * 0.1;
       }
@@ -190,21 +339,21 @@ if (weatherSection && 'IntersectionObserver' in window) {
       f.x += f.vx;
       f.y += f.vy;
 
-      // Mantener dentro del estanque con rebote suave
-      if (f.x < pad) { f.vx += 0.08; }
-      else if (f.x > width - pad) { f.vx -= 0.08; }
-      if (f.y < 20) { f.vy += 0.05; }
-      else if (f.y > height - 20) { f.vy -= 0.05; }
+      // Mantener dentro de los bordes con giro suave
+      if (f.x < pad) f.vx += 0.1;
+      else if (f.x > width - pad) f.vx -= 0.1;
+      if (f.y < 18) f.vy += 0.08;
+      else if (f.y > height - 18) f.vy -= 0.08;
 
-      // Orientación gradual
+      // Orientación del pez hacia el movimiento
       const moveAngle = Math.atan2(f.vy, f.vx);
       let diff = moveAngle - f.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      f.angle += diff * 0.08;
+      f.angle += diff * 0.09;
     }
 
-    // Ondas en el agua
+    // Actualizar ondas
     for (let i = ripples.length - 1; i >= 0; i--) {
       const r = ripples[i];
       r.radius += 1.4;
@@ -229,7 +378,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     ctx.quadraticCurveTo(0, s * 0.28, s * 0.6, 0);
     ctx.fill();
 
-    // Aleta caudal que oscila
+    // Aleta caudal
     ctx.beginPath();
     ctx.moveTo(-s * 0.45, 0);
     ctx.lineTo(-s * 0.85, -s * 0.25 + wag);
@@ -238,8 +387,8 @@ if (weatherSection && 'IntersectionObserver' in window) {
     ctx.closePath();
     ctx.fill();
 
-    // Pequeño brillo dorsal
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    // Reflejo dorsal
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(s * 0.1, -s * 0.05, s * 0.2, -0.4, 0.8);
@@ -251,7 +400,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
   function render() {
     ctx.clearRect(0, 0, width, height);
 
-    // Ondas en el agua
+    // Dibujar ondas en el agua
     for (const r of ripples) {
       ctx.strokeStyle = `rgba(54, 118, 206, ${r.alpha})`;
       ctx.lineWidth = 1.5;
@@ -260,7 +409,18 @@ if (weatherSection && 'IntersectionObserver' in window) {
       ctx.stroke();
     }
 
-    // Dibujar cada pez
+    // Dibujar alimento
+    for (const c of foodCrumbs) {
+      ctx.fillStyle = `rgba(226, 165, 50, ${c.life})`;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(160, 95, 15, ${c.life * 0.7})`;
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+
+    // Dibujar peces
     for (const f of fishList) {
       drawFish(f);
     }
@@ -287,7 +447,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     }
   }
 
-  // Interacción
+  // Interacción: Mover cursor (atraer peces)
   canvas.addEventListener('pointermove', (e) => {
     const rect = canvas.getBoundingClientRect();
     pointer.x = e.clientX - rect.left;
@@ -295,6 +455,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     pointer.active = true;
   });
 
+  // Interacción: Clic / Tap (soltar alimento)
   canvas.addEventListener('pointerdown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const px = e.clientX - rect.left;
@@ -302,7 +463,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     pointer.x = px;
     pointer.y = py;
     pointer.active = true;
-    ripples.push({ x: px, y: py, radius: 4, alpha: 0.6 });
+    dropFood(px, py);
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -311,9 +472,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
 
   window.addEventListener('resize', () => {
     resize();
-    if (reducedMotion) {
-      render();
-    }
+    if (reducedMotion) render();
   });
 
   resize();
@@ -324,7 +483,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
     return;
   }
 
-  // Pausa inteligente cuando el canvas no está en pantalla
   if ('IntersectionObserver' in window) {
     const pondObserver = new IntersectionObserver((entries) => {
       if (entries.some(e => e.isIntersecting)) {
@@ -338,6 +496,3 @@ if (weatherSection && 'IntersectionObserver' in window) {
     start();
   }
 })();
-
-
-

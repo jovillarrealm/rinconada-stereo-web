@@ -37,14 +37,63 @@
             
             <div class="player-card" id="reproductor">
               <div class="player-card-top">
-                <span class="live-dot" aria-hidden="true"></span> SEÑAL EN DIRECTO
-                <span class="signal-lines" aria-hidden="true">▂▄▆▄▂</span>
+                <span class="live-dot" aria-hidden="true"></span>
+                <span class="live-title">SEÑAL EN DIRECTO</span>
+                <div class="equalizer-bars" id="eq-bars" aria-hidden="true" title="Indicador de audio">
+                  <span class="bar bar-1"></span>
+                  <span class="bar bar-2"></span>
+                  <span class="bar bar-3"></span>
+                  <span class="bar bar-4"></span>
+                  <span class="bar bar-5"></span>
+                </div>
               </div>
-              <audio id="radio" controls preload="none" aria-label="Señal en vivo de Rinconada Stereo" src="https://play14.tikast.com:22012/stream"></audio>
-              <p id="audio-status" class="player-hint" role="status">Pulsa reproducir para conectar.</p>
-              <details id="alternate-player">
-                <summary>Usar reproductor alternativo</summary>
-                <div id="alternate-frame"></div>
+
+              <!-- REPRODUCTOR CUSTOMIZADO POR DEFECTO -->
+              <div class="custom-player" id="custom-player">
+                <div class="custom-player-main">
+                  <button class="custom-play-btn" id="play-btn" type="button" aria-label="Reproducir señal en vivo" title="Reproducir señal en vivo">
+                    <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                    </svg>
+                    <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display: none;">
+                      <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                      <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                    </svg>
+                  </button>
+
+                  <div class="custom-player-info">
+                    <div class="custom-stream-badge">
+                      <span class="station-name">Rinconada Stereo</span>
+                      <span class="frequency-tag">104.4 FM</span>
+                    </div>
+                    <p id="audio-status" class="player-hint" role="status">Pulsa el botón para conectar con la señal.</p>
+                  </div>
+                </div>
+
+                <div class="custom-volume-box">
+                  <button class="custom-mute-btn" id="mute-btn" type="button" aria-label="Silenciar o activar sonido" title="Silenciar / Activar sonido">
+                    <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    <svg class="icon-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <line x1="23" y1="9" x2="17" y2="15"></line>
+                      <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                  </button>
+                  <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen">
+                </div>
+              </div>
+
+              <!-- REPRODUCTOR POR DEFECTO DEL NAVEGADOR (ALTERNATIVA) -->
+              <details class="browser-player-details" id="alternate-player">
+                <summary>Usar reproductor por defecto del navegador</summary>
+                <div class="browser-player-wrap">
+                  <audio id="radio" controls preload="none" aria-label="Señal en vivo de Rinconada Stereo (reproductor nativo)" src="https://play14.tikast.com:22012/stream"></audio>
+                  <div id="alternate-frame"></div>
+                </div>
               </details>
             </div>
           </div>
@@ -64,7 +113,7 @@
           <div class="fish-pond-header">
             <div class="fish-title-group">
               <span class="fish-tag">La ciénaga viva</span>
-              <p class="fish-caption">Cardumen en la corriente · Mueve o toca para interactuar</p>
+              <p class="fish-caption">Mueve el cursor para atraer a los peces o haz clic para alimentarlos 🌾</p>
             </div>
             <span class="fish-icon" aria-hidden="true">〰 🐟 〰</span>
           </div>

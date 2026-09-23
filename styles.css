@@ -42,12 +42,45 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .player-card, .chat-card { border-radius: 1rem; background: white; box-shadow: 0 20px 60px #12366313; }
 .player-card { padding: 1.8rem; border: 1px solid var(--line); }
 .player-card-top { display: flex; align-items: center; gap: .7rem; font-size: .75rem; font-weight: 800; letter-spacing: .13em; color: var(--deep); }
-.signal-lines { margin-left: auto; color: var(--blue); font-size: 1.5rem; letter-spacing: .1em; }
-audio { display: block; width: 100%; margin: 1.5rem 0 .8rem; }
-.player-hint { color: #65758b; font-size: .85rem; margin: 0; }
-.player-card details { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-.player-card summary { color: var(--blue); font-weight: 700; cursor: pointer; }
-#alternate-frame iframe { display: block; width: 100%; height: 400px; margin-top: 1rem; border: 0; border-radius: .5rem; }
+.live-title { font-weight: 800; letter-spacing: .12em; color: var(--deep); }
+
+/* BARRAS DE ECUALIZADOR ANIMADO */
+.equalizer-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 18px; margin-left: auto; }
+.equalizer-bars .bar { display: block; width: 3.5px; height: 3px; background: var(--blue); border-radius: 2px; transition: height .2s ease; }
+.equalizer-bars.is-playing .bar { animation: eqBounce .75s ease-in-out infinite alternate; }
+.equalizer-bars.is-playing .bar-1 { animation-delay: .1s; }
+.equalizer-bars.is-playing .bar-2 { animation-delay: .3s; }
+.equalizer-bars.is-playing .bar-3 { animation-delay: 0s; }
+.equalizer-bars.is-playing .bar-4 { animation-delay: .4s; }
+.equalizer-bars.is-playing .bar-5 { animation-delay: .2s; }
+@keyframes eqBounce {
+  0% { height: 4px; }
+  100% { height: 18px; }
+}
+
+/* REPRODUCTOR CUSTOMIZADO */
+.custom-player { display: flex; flex-direction: column; gap: 1.2rem; margin: 1.4rem 0 .5rem; }
+.custom-player-main { display: flex; align-items: center; gap: 1.2rem; }
+.custom-play-btn { width: 60px; height: 60px; flex-shrink: 0; border-radius: 50%; background: var(--blue); color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 6px 20px rgba(54, 118, 206, 0.35); transition: transform .18s ease, background .18s ease; }
+.custom-play-btn:hover { background: var(--deep); transform: scale(1.05); }
+.custom-play-btn:active { transform: scale(0.96); }
+.custom-play-btn svg { width: 26px; height: 26px; }
+.custom-stream-badge { display: flex; align-items: center; gap: .6rem; }
+.station-name { font-weight: 800; font-size: 1.1rem; color: var(--deep); }
+.frequency-tag { padding: .2rem .55rem; border-radius: 999px; background: #eaf1fa; color: var(--blue); font-size: .75rem; font-weight: 800; letter-spacing: .05em; }
+.player-hint { color: #65758b; font-size: .85rem; margin: .3rem 0 0; }
+
+.custom-volume-box { display: flex; align-items: center; gap: .8rem; padding: .6rem .9rem; background: #f6f9fc; border-radius: .7rem; border: 1px solid var(--line); }
+.custom-mute-btn { background: none; border: none; padding: 4px; color: var(--deep); cursor: pointer; display: flex; align-items: center; }
+.custom-mute-btn svg { width: 20px; height: 20px; }
+.custom-volume-slider { flex: 1; accent-color: var(--blue); cursor: pointer; height: 6px; }
+
+/* REPRODUCTOR POR DEFECTO DEL NAVEGADOR */
+.browser-player-details { margin-top: 1.3rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.browser-player-details summary { color: var(--blue); font-weight: 700; font-size: .85rem; cursor: pointer; }
+.browser-player-wrap { padding-top: .8rem; }
+.browser-player-wrap audio { display: block; width: 100%; margin: .5rem 0; }
+#alternate-frame iframe { display: block; width: 100%; height: 380px; margin-top: 1rem; border: 0; border-radius: .5rem; }
 
 .chat-card { padding: 1.5rem; border: 1px solid var(--line); }
 .chat-card .kicker { margin: 0; }
@@ -60,9 +93,9 @@ audio { display: block; width: 100%; margin: 1.5rem 0 .8rem; }
 .fish-pond-inner { max-width: 1320px; margin: auto; }
 .fish-pond-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
 .fish-tag { color: var(--blue); }
-.fish-caption { margin: .2rem 0 0; color: #576d8a; font-size: .82rem; }
+.fish-caption { margin: .2rem 0 0; color: #576d8a; font-size: .84rem; font-weight: 600; }
 .fish-icon { font-size: 1rem; color: var(--blue); }
-.canvas-wrapper { position: relative; width: 100%; height: 160px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: crosshair; touch-action: none; }
+.canvas-wrapper { position: relative; width: 100%; height: 165px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: pointer; touch-action: none; }
 #fish-canvas { width: 100%; height: 100%; display: block; }
 
 /* SECCIÓN 02 / EN LA EMISORA */
@@ -80,15 +113,18 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .schedule-note span { color: var(--blue); font-size: 2rem; }
 .schedule-note p { max-width: 37rem; line-height: 1.6; }
 
-/* CLIMA NATIVO OPEN-METEO (EN EL MISMO ESPACIO) */
+/* CLIMA NATIVO OPEN-METEO CON LA PACHA PROMINENTE Y EN COLOR */
 .weather-inline { padding: 1rem 0 0 1.5rem; border-left: 1px solid var(--line); }
 .weather-caption { margin: 0 0 .7rem; color: #59718f; font-size: .76rem; font-weight: 700; line-height: 1.5; }
-.weather-card-content { background: #f6f9fc; border: 1px solid #dce4ef; border-radius: .9rem; padding: 1.2rem; min-height: 130px; display: flex; flex-direction: column; justify-content: center; }
+.weather-card-content { background: #f6f9fc; border: 1px solid #dce4ef; border-radius: .9rem; padding: 1.3rem; min-height: 140px; display: flex; flex-direction: column; justify-content: center; }
 .weather-main { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.weather-temp { font-size: 2.4rem; font-weight: 800; letter-spacing: -.03em; color: var(--deep); line-height: 1; }
-.weather-icon-box svg { width: 44px; height: 44px; display: block; }
-.weather-desc { font-size: .95rem; font-weight: 700; color: var(--blue); margin-top: .4rem; }
-.weather-sub { display: flex; gap: 1.2rem; font-size: .8rem; color: #5c728e; margin-top: .7rem; padding-top: .7rem; border-top: 1px solid #e4ecf6; }
+.weather-temp-group { display: flex; flex-direction: column; }
+.weather-temp { font-size: 2.6rem; font-weight: 800; letter-spacing: -.04em; color: var(--deep); line-height: 1; }
+.weather-location-highlight { font-size: 1.18rem; font-weight: 800; color: var(--blue); margin: .35rem 0 .15rem; letter-spacing: -.02em; display: flex; align-items: center; gap: .35rem; }
+.weather-location-highlight span { font-weight: 700; font-size: .9rem; color: #567294; }
+.weather-icon-box svg { width: 48px; height: 48px; display: block; flex-shrink: 0; }
+.weather-desc { font-size: .9rem; font-weight: 600; color: #546e8e; margin-top: .15rem; }
+.weather-sub { display: flex; gap: 1.2rem; font-size: .8rem; color: #5c728e; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid #e4ecf6; }
 .weather-loading, .weather-error { color: #65758b; font-size: .85rem; text-align: center; padding: .8rem 0; }
 .weather-source { display: inline-block; margin-top: .6rem; color: #59718f; font-size: .76rem; text-decoration: none; }
 .weather-source:hover { color: var(--blue); text-decoration: underline; }
