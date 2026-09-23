@@ -18,103 +18,123 @@ a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visibl
 .skip-link:focus { top: 1rem; }
 
 .site-header { background: var(--blue); color: white; }
-.header-inner { max-width: 1320px; min-height: 100px; margin: auto; padding: 1rem clamp(1.2rem, 4vw, 4.5rem); display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
+.header-inner { max-width: 1320px; min-height: 90px; margin: auto; padding: 1rem clamp(1.2rem, 4vw, 4.5rem); display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
 .brand img { display: block; width: 148px; height: auto; }
 .site-header nav { display: flex; gap: clamp(1rem, 3vw, 2.4rem); }
 .site-header nav a { font-size: .88rem; font-weight: 700; text-decoration: none; }
-.site-header nav a:hover, .text-action:hover { text-decoration: underline; text-underline-offset: 5px; }
-.header-chat { display: inline-flex; align-items: center; gap: .4rem; padding: .7rem 1.1rem; border: 1px solid #ffffff91; border-radius: 999px; font-size: .88rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
-.header-chat:hover { background: white; color: var(--blue); }
-main > section, #chat { scroll-margin-top: 1.5rem; }
+.site-header nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 
-.hero { max-width: 1320px; min-height: 610px; margin: auto; padding: clamp(4rem, 8vw, 7.5rem) clamp(1.2rem, 4vw, 4.5rem); display: grid; grid-template-columns: 1.12fr .88fr; align-items: center; gap: 2rem; }
-.eyebrow, .kicker, .section-number { font-size: .77rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+/* 01 / SECCIÓN UNIFICADA: HERO + ESCUCHA (SIN SCROLL) */
+.hero-listen { max-width: 1320px; margin: auto; padding: clamp(2rem, 4vw, 3.5rem) clamp(1.2rem, 4vw, 4.5rem) 4rem; }
+.eyebrow, .kicker, .section-number, .fish-tag { font-size: .77rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .eyebrow { display: flex; align-items: center; gap: .7rem; }
 .live-dot { display: inline-block; width: .6rem; height: .6rem; flex: none; border-radius: 50%; background: #ef704f; box-shadow: 0 0 0 .25rem #ef704f2a; }
-.hero h1, h2 { margin: .55rem 0 1.5rem; font-weight: 800; letter-spacing: -.055em; line-height: .98; }
-.hero h1 { max-width: 10ch; font-size: clamp(4.2rem, 8vw, 8.2rem); }
-.hero h1 em, h2 em { font-family: Georgia, serif; font-weight: 400; }
-.lead { max-width: 34rem; font-size: clamp(1.1rem, 1.5vw, 1.35rem); line-height: 1.6; }
-.hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 2.3rem; }
-.primary-action { display: inline-flex; align-items: center; justify-content: space-between; gap: 1.8rem; min-height: 54px; padding: .9rem 1.4rem; border-radius: 999px; background: var(--blue); color: white; font-weight: 700; text-decoration: none; }
-.primary-action:hover { background: var(--deep); }
-.text-action { padding: .9rem; color: var(--deep); font-weight: 700; text-decoration: none; }
-.text-action span { margin-left: .5rem; }
-.hero-art { position: relative; height: min(36vw, 445px); min-height: 300px; overflow: hidden; border-radius: 52% 48% 49% 51% / 47% 56% 44% 53%; background: var(--blue); transform: rotate(-7deg); }
-.ring { position: absolute; border: 1px solid #ffffff70; border-radius: 50%; transform: rotate(7deg); }
-.ring-one { inset: 13%; } .ring-two { inset: 25%; } .ring-three { inset: 37%; }
-.art-label { position: absolute; top: 16%; left: 18%; color: white; font-size: .72rem; font-weight: 800; letter-spacing: .18em; line-height: 1.6; transform: rotate(7deg); }
-.art-star { position: absolute; right: 19%; bottom: 7%; color: var(--yellow); font-size: clamp(7rem, 18vw, 17rem); line-height: 1; transform: rotate(7deg); }
 
-.listen-section, .schedule-section, .contact-section { padding: 3rem clamp(1.2rem, 4vw, 4.5rem) 5rem; }
-.listen-section { background: #e9f0fa; }
-.listen-section > *, .schedule-section > *, .contact-section > * { max-width: 1180px; margin-left: auto; margin-right: auto; }
+.hero-listen h1, h2 { margin: .55rem 0 1.2rem; font-weight: 800; letter-spacing: -.055em; line-height: .98; }
+.hero-listen h1 { font-size: clamp(3.2rem, 5.4vw, 5.6rem); max-width: 12ch; }
+.hero-listen h1 em, h2 em { font-family: Georgia, serif; font-weight: 400; }
+.hero-listen .lead { max-width: 32rem; font-size: clamp(1.05rem, 1.3vw, 1.25rem); line-height: 1.55; margin: 0 0 1.8rem; color: #2d4563; }
+
+.hero-listen-layout { display: grid; grid-template-columns: 1.08fr .92fr; align-items: start; gap: clamp(2rem, 4vw, 4rem); padding-top: 2rem; }
+.hero-listen-primary { display: flex; flex-direction: column; }
+
+.player-card, .chat-card { border-radius: 1rem; background: white; box-shadow: 0 20px 60px #12366313; }
+.player-card { padding: 1.8rem; border: 1px solid var(--line); }
+.player-card-top { display: flex; align-items: center; gap: .7rem; font-size: .75rem; font-weight: 800; letter-spacing: .13em; color: var(--deep); }
+.signal-lines { margin-left: auto; color: var(--blue); font-size: 1.5rem; letter-spacing: .1em; }
+audio { display: block; width: 100%; margin: 1.5rem 0 .8rem; }
+.player-hint { color: #65758b; font-size: .85rem; margin: 0; }
+.player-card details { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.player-card summary { color: var(--blue); font-weight: 700; cursor: pointer; }
+#alternate-frame iframe { display: block; width: 100%; height: 400px; margin-top: 1rem; border: 0; border-radius: .5rem; }
+
+.chat-card { padding: 1.5rem; border: 1px solid var(--line); }
+.chat-card .kicker { margin: 0; }
+.chat-card h2 { margin: .4rem 0; font-size: clamp(1.8rem, 2.5vw, 2.4rem); letter-spacing: -.04em; }
+.chat-card p:not(.kicker) { margin: .3rem 0 1.1rem; color: #54677e; line-height: 1.5; font-size: .95rem; }
+.chat-card iframe { display: block; width: 100%; height: 440px; border: 0; border-radius: .6rem; background: var(--deep); }
+
+/* FRANJA DE PECESITOS (CANVAS 2D ANTES DE LA SECCIÓN 02) */
+.fish-pond-section { background: linear-gradient(180deg, var(--cream) 0%, #eaf1fa 35%, #eaf1fa 65%, white 100%); padding: 1.5rem clamp(1.2rem, 4vw, 4.5rem) 2.5rem; }
+.fish-pond-inner { max-width: 1320px; margin: auto; }
+.fish-pond-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+.fish-tag { color: var(--blue); }
+.fish-caption { margin: .2rem 0 0; color: #576d8a; font-size: .82rem; }
+.fish-icon { font-size: 1rem; color: var(--blue); }
+.canvas-wrapper { position: relative; width: 100%; height: 160px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: crosshair; touch-action: none; }
+#fish-canvas { width: 100%; height: 100%; display: block; }
+
+/* SECCIÓN 02 / EN LA EMISORA */
+.schedule-section, .contact-section { padding: 3rem clamp(1.2rem, 4vw, 4.5rem) 5rem; }
+.schedule-section { background: white; }
+.schedule-section > *, .contact-section > * { max-width: 1320px; margin-left: auto; margin-right: auto; }
 .section-number { padding-bottom: 1.2rem; border-bottom: 1px solid var(--line); color: #59718f; }
 .kicker { color: var(--blue); }
-h2 { font-size: clamp(2.7rem, 5vw, 5rem); }
+h2 { font-size: clamp(2.4rem, 4.5vw, 4.4rem); }
 h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
-.listen-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: clamp(2rem, 5vw, 5rem); padding-top: 3rem; }
-.listen-primary > p:not(.kicker) { max-width: 34rem; line-height: 1.7; }
-.player-card, .chat-card { border-radius: 1rem; background: white; box-shadow: 0 20px 60px #12366313; }
-.player-card { margin-top: 2rem; padding: 2rem; }
-.player-card-top { display: flex; align-items: center; gap: .7rem; font-size: .75rem; font-weight: 800; letter-spacing: .13em; }
-.signal-lines { margin-left: auto; color: var(--blue); font-size: 1.5rem; letter-spacing: .1em; }
-audio { display: block; width: 100%; margin: 2rem 0 1rem; }
-.player-hint { color: #65758b; font-size: .85rem; }
-.player-card details { margin-top: 1.3rem; padding-top: 1rem; border-top: 1px solid var(--line); }
-.player-card summary { color: var(--blue); font-weight: 700; cursor: pointer; }
-#alternate-frame iframe { display: block; width: 100%; height: 420px; margin-top: 1rem; border: 0; }
-.chat-card { padding: 1.5rem; }
-.chat-card .kicker { margin: 0; }
-.chat-card h3 { margin: .4rem 0; font-size: clamp(2rem, 3vw, 2.7rem); letter-spacing: -.04em; }
-.chat-card p:not(.kicker) { margin: .4rem 0 1.3rem; color: #54677e; line-height: 1.5; }
-.chat-card iframe { display: block; width: 100%; height: 450px; border: 0; background: var(--deep); }
-.chat-direct { display: inline-block; margin-top: 1rem; color: var(--blue); font-size: .85rem; font-weight: 700; }
-
-.schedule-section { background: white; }
-.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; padding-top: 3rem; }
+.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; padding-top: 2.5rem; }
 .status-pill { padding: .65rem 1rem; border: 1px solid var(--blue); border-radius: 999px; color: var(--blue); font-size: .8rem; font-weight: 700; white-space: nowrap; }
-.schedule-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); align-items: start; gap: clamp(2rem, 5vw, 5rem); margin-top: 1rem; }
+.schedule-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); align-items: start; gap: clamp(2rem, 5vw, 5rem); margin-top: 1.5rem; }
 .schedule-note { display: flex; align-items: center; gap: 2rem; padding: 1.5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .schedule-note span { color: var(--blue); font-size: 2rem; }
 .schedule-note p { max-width: 37rem; line-height: 1.6; }
-.weather-inline { padding: 1rem 0 0 1.5rem; border-left: 1px solid var(--line); }
-.weather-caption { margin: 0 0 .6rem; color: #59718f; font-size: .76rem; font-weight: 700; line-height: 1.5; }
-.weatherwidget-io { display: block; color: var(--blue); font-size: .85rem; }
-.weather-source { display: inline-block; margin-top: .4rem; color: #59718f; font-size: .76rem; }
 
+/* CLIMA NATIVO OPEN-METEO (EN EL MISMO ESPACIO) */
+.weather-inline { padding: 1rem 0 0 1.5rem; border-left: 1px solid var(--line); }
+.weather-caption { margin: 0 0 .7rem; color: #59718f; font-size: .76rem; font-weight: 700; line-height: 1.5; }
+.weather-card-content { background: #f6f9fc; border: 1px solid #dce4ef; border-radius: .9rem; padding: 1.2rem; min-height: 130px; display: flex; flex-direction: column; justify-content: center; }
+.weather-main { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.weather-temp { font-size: 2.4rem; font-weight: 800; letter-spacing: -.03em; color: var(--deep); line-height: 1; }
+.weather-icon-box svg { width: 44px; height: 44px; display: block; }
+.weather-desc { font-size: .95rem; font-weight: 700; color: var(--blue); margin-top: .4rem; }
+.weather-sub { display: flex; gap: 1.2rem; font-size: .8rem; color: #5c728e; margin-top: .7rem; padding-top: .7rem; border-top: 1px solid #e4ecf6; }
+.weather-loading, .weather-error { color: #65758b; font-size: .85rem; text-align: center; padding: .8rem 0; }
+.weather-source { display: inline-block; margin-top: .6rem; color: #59718f; font-size: .76rem; text-decoration: none; }
+.weather-source:hover { color: var(--blue); text-decoration: underline; }
+
+/* SECCIÓN 03 / CONTACTO */
 .contact-section { background: var(--deep); color: white; }
 .contact-section .section-number { border-color: #ffffff40; color: #aec7e7; }
 .contact-section .kicker { color: var(--yellow); }
-.contact-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: clamp(2rem, 8vw, 8rem); padding-top: 4rem; }
+.contact-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: clamp(2rem, 8vw, 8rem); padding-top: 3.5rem; }
 .contact-links { display: grid; }
 .contact-links a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.4rem 0; border-bottom: 1px solid #ffffff50; color: white; font-size: 1.1rem; font-weight: 700; text-align: left; text-decoration: none; }
 .contact-links a:hover { color: var(--yellow); }
+
 footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2rem clamp(1.2rem, 4vw, 4.5rem); background: var(--blue); color: white; font-size: .8rem; }
 footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
 
+/* RESPONSIVE DESIGN */
 @media (max-width: 800px) {
-  .header-inner { min-height: 80px; flex-wrap: wrap; gap: .8rem; }
-  .brand img { width: 105px; }
+  .header-inner { min-height: 75px; flex-wrap: wrap; gap: .8rem; }
+  .brand img { width: 110px; }
   .site-header nav { order: 3; width: 100%; justify-content: space-between; gap: .8rem; }
-  .site-header nav a, .header-chat { font-size: .75rem; }
-  .header-chat { padding: .6rem .8rem; }
-  .hero { min-height: auto; grid-template-columns: 1fr; padding-top: 4rem; }
-  .hero-art { display: none; }
-  .hero h1 { font-size: clamp(3.8rem, 12vw, 6.5rem); }
-  .listen-layout, .schedule-bottom, .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
-  .listen-section, .schedule-section, .contact-section { padding-bottom: 4rem; }
+  .site-header nav a { font-size: .78rem; }
+  
+  /* En móvil, el reproductor queda encima sin scroll */
+  .hero-listen { padding: 1.8rem 1.2rem 2.8rem; }
+  .hero-listen-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 1.2rem; }
+  .hero-listen h1 { font-size: clamp(2.8rem, 11vw, 4.2rem); max-width: 100%; }
+  
+  .canvas-wrapper { height: 135px; }
+  .schedule-bottom, .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
+  .schedule-section, .contact-section { padding-bottom: 4rem; }
   .section-heading { align-items: start; flex-direction: column; gap: 0; }
   .schedule-note { align-items: start; }
   .weather-inline { padding: 0; border: 0; }
   footer { flex-wrap: wrap; }
 }
+
 @media (max-width: 440px) {
-  .hero h1 { font-size: 3.55rem; }
-  .hero-actions { align-items: stretch; }
-  .primary-action { width: 100%; }
-  .player-card { padding: 1.2rem; }
-  .chat-card { padding: 1rem; }
+  .hero-listen h1 { font-size: 2.6rem; }
+  .player-card { padding: 1.3rem; }
+  .chat-card { padding: 1.1rem; }
+  .canvas-wrapper { height: 120px; }
   footer p { order: 3; width: 100%; }
 }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .live-dot { box-shadow: none; }
+}
