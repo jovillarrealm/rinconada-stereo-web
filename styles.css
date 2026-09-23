@@ -124,15 +124,16 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 #alternate-frame iframe { display: block; width: 100%; height: 380px; margin-top: 1rem; border: 0; border-radius: .5rem; }
 
 /* MASCOTA OFICIAL: LOCUPEZ */
-.mascot-card { display: flex; align-items: center; padding: 1.3rem 1.6rem; border-radius: 1.25rem; background: linear-gradient(145deg, #ffffff 0%, #edf4fc 100%); border: 1px solid #cce0f7; box-shadow: 0 16px 40px rgba(13, 98, 217, 0.12); position: relative; overflow: hidden; }
-.mascot-card::before { content: ""; position: absolute; width: 220px; height: 220px; background: radial-gradient(circle, rgba(13, 98, 217, 0.12) 0%, rgba(255, 208, 0, 0.08) 50%, transparent 70%); top: 50%; left: 30%; transform: translate(-50%, -50%); pointer-events: none; }
-.mascot-inner { display: flex; align-items: center; gap: 1.3rem; position: relative; z-index: 1; width: 100%; }
-.mascot-img-wrap { flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-.mascot-img { display: block; width: clamp(120px, 13vw, 165px); height: auto; filter: drop-shadow(0 10px 20px rgba(9, 33, 64, 0.2)); transition: transform .35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.mascot-img:hover { transform: scale(1.08) rotate(-3deg); }
-.mascot-info { display: flex; flex-direction: column; gap: .45rem; }
-.mascot-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .32rem .75rem; border-radius: 999px; background: var(--blue); color: #ffffff; font-size: .78rem; font-weight: 800; letter-spacing: .03em; width: fit-content; box-shadow: 0 3px 10px rgba(13, 98, 217, 0.3); }
-.mascot-quote { margin: 0; font-size: .95rem; color: #1e3a5f; line-height: 1.45; font-style: italic; font-weight: 600; }
+.mascot-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.8rem 1.6rem 1.6rem; border-radius: 1.25rem; background: linear-gradient(145deg, #ffffff 0%, #edf4fc 100%); border: 1px solid #cce0f7; box-shadow: 0 16px 40px rgba(13, 98, 217, 0.12); position: relative; overflow: hidden; text-align: center; }
+.mascot-card::before { content: ""; position: absolute; width: 280px; height: 280px; background: radial-gradient(circle, rgba(13, 98, 217, 0.14) 0%, rgba(255, 208, 0, 0.1) 50%, transparent 70%); top: 38%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.mascot-inner { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; position: relative; z-index: 1; width: 100%; text-align: center; }
+.mascot-img-wrap { display: flex; align-items: center; justify-content: center; width: 100%; }
+.mascot-img { display: block; width: clamp(190px, 20vw, 255px); height: auto; filter: drop-shadow(0 14px 28px rgba(9, 33, 64, 0.22)); transition: transform .38s cubic-bezier(0.34, 1.56, 0.64, 1), filter .35s ease; cursor: pointer; }
+.mascot-img:hover { transform: scale(1.12) rotate(-4deg); filter: drop-shadow(0 20px 36px rgba(13, 98, 217, 0.35)); }
+.mascot-img:active { transform: scale(0.96) rotate(2deg); }
+.mascot-info { display: flex; flex-direction: column; align-items: center; gap: .5rem; max-width: 24rem; }
+.mascot-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .85rem; border-radius: 999px; background: var(--blue); color: #ffffff; font-size: .82rem; font-weight: 800; letter-spacing: .03em; width: fit-content; box-shadow: 0 3px 10px rgba(13, 98, 217, 0.3); }
+.mascot-quote { margin: 0; font-size: .95rem; color: #1e3a5f; line-height: 1.45; font-style: italic; font-weight: 600; text-align: center; }
 
 /* CHAT CARD EN AZUL DE MARCA */
 .chat-card { padding: clamp(1.5rem, 2.5vw, 2rem); display: flex; flex-direction: column; }
@@ -217,11 +218,13 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .hero-listen h1 { font-size: clamp(2.6rem, 10vw, 3.8rem); max-width: 100%; }
   
   .mascot-inner {
-    flex-direction: row;
-    gap: 1.2rem;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
   }
   .mascot-img {
-    width: 110px;
+    width: clamp(170px, 45vw, 220px);
   }
   
   .canvas-wrapper { height: 230px; }
@@ -240,16 +243,17 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .live-signal-block { padding: .4rem .85rem; gap: .5rem; }
   .live-signal-heading { font-size: 1.3rem; }
   .chat-card h2 { font-size: 1.4rem; }
-  .mascot-card { padding: 1.1rem; }
+  .mascot-card { padding: 1.4rem 1.1rem; }
   .mascot-inner {
     flex-direction: column;
     text-align: center;
+    gap: .8rem;
   }
   .mascot-info {
     align-items: center;
   }
   .mascot-img {
-    width: 130px;
+    width: 175px;
   }
   .canvas-wrapper { height: 205px; }
   footer p { order: 3; width: 100%; }
