@@ -140,12 +140,13 @@ function updateNowPlaying(rawTitle) {
 
     if ('mediaSession' in navigator) {
       try {
+        const logoUrl = new URL('assets/logo-rinconada.png', window.location.href).href;
         navigator.mediaSession.metadata = new MediaMetadata({
           title: cleaned,
           artist: 'Rinconada Stereo',
           album: 'Señal en directo · La Pacha',
           artwork: [
-            { src: 'assets/logo.png', sizes: '512x512', type: 'image/png' }
+            { src: logoUrl, sizes: '512x512', type: 'image/png' }
           ]
         });
       } catch (e) {
