@@ -1,0 +1,9 @@
+# Archivos del sistema y temporales
+Thumbs.db
+.DS_Store
+*.log
+
+# Entornos y dependencias (si aplica)
+node_modules/
+.vscode/
+.idea/
