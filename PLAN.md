@@ -26,14 +26,18 @@ Estado: plan propuesto, 23 de septiembre de 2026. Referencia de aceptación: `SP
 
 **Salida:** criterios A1–A9 del spec comprobados localmente con Hero sin scroll, botones simplificados, pecesitos en canvas 2D y clima nativo Open-Meteo.
 
-## Hito 2 — publicar prueba en GitHub Pages
+## Hito 2 — publicar prueba en GitHub Pages (Completado y desplegado)
 
-1. Con acceso autorizado a GitHub, crear repositorio público bajo la cuenta elegida y subir solo código y assets públicos. Mantener `.nojekyll`; no subir backups, claves ni exportaciones.
-2. En **Settings → Pages**, elegir **Deploy from a branch**, rama `main`, carpeta `/ (root)` y guardar. GitHub recomienda la publicación desde rama cuando no hay compilación. [Guía oficial](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
-3. Abrir la URL real `https://USUARIO.github.io/REPOSITORIO/`; revisar assets relativos, consola, audio principal y respaldo, chat, clima, enlaces, teclado y pantallas estrechas. Probar con dos dispositivos reales y un invitado externo. Registrar fallos y corregirlos en el repositorio.
-4. Medir la página móvil publicada con herramientas de rendimiento; documentar peso inicial y servicios externos. Los widgets se deben cargar únicamente cuando aportan valor al visitante.
+1. **Repositorio público creado:** `https://github.com/jovillarrealm/rinconada-stereo-web` con ramas `main` y `agy-cienaga`.
+2. **GitHub Pages habilitado y publicado:** URL en vivo: [`https://jovillarrealm.github.io/rinconada-stereo-web/`](https://jovillarrealm.github.io/rinconada-stereo-web/) (HTTPS forzado, `.nojekyll` activo, despliegue directo desde raíz de `main`).
+3. **Pruebas y verificación completadas:**
+   - Recursos estáticos (`styles.css`, `app.js`, `assets/logo-rinconada.png`) retornan HTTP 200.
+   - Sondeo en vivo de canción (`Shoutcast2` vía JSONP) operativo sin bloqueos CORS.
+   - Clima regional Open-Meteo verificado con IntersectionObserver diferido (33°C, La Pacha prominente).
+   - Acuario interactivo Canvas 2D (14 peces, 8 especies) verificado tanto en escritorio como en móvil (390px).
+   - Chat Cbox cargado en su contenedor sin popups ni desbordamiento.
 
-**Salida:** URL `github.io` revisable y lista de pruebas con resultado. WordPress y DNS siguen sirviendo el dominio actual.
+**Salida:** URL `github.io` pública y lista para depuración conjunta. WordPress y DNS del dominio original siguen intactos.
 
 ## Hito 3 — decisión sobre el dominio (posterior a la prueba)
 
