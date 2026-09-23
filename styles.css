@@ -22,7 +22,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visibl
 .skip-link:focus { top: 1rem; }
 
 .site-header { background: linear-gradient(180deg, #0e5ed2 0%, #0a4ea8 100%); color: white; padding: 1.4rem 0 1.1rem; box-shadow: 0 4px 20px rgba(9, 33, 64, 0.15); }
-.header-inner { max-width: 1320px; margin: auto; padding: 0 clamp(1.2rem, 4vw, 4.5rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; }
+.header-inner { max-width: 1560px; margin: auto; padding: 0 clamp(1rem, 2vw, 2.2rem); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; }
 .brand { display: inline-flex; justify-content: center; }
 .brand img { display: block; width: clamp(220px, 28vw, 300px); height: auto; filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.16)); }
 .site-header nav { display: flex; justify-content: center; gap: clamp(1.4rem, 3.5vw, 2.6rem); }
@@ -31,7 +31,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visibl
 main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 
 /* 01 / SECCIÓN UNIFICADA: HERO + ESCUCHA (SIN SCROLL) */
-.hero-listen { max-width: 1320px; margin: auto; padding: clamp(2rem, 4vw, 3.5rem) clamp(1.2rem, 4vw, 4.5rem) 4rem; }
+.hero-listen { max-width: 1560px; margin: auto; padding: clamp(2rem, 3vw, 3rem) clamp(1rem, 2vw, 2.2rem) 3.5rem; }
 .eyebrow, .kicker, .section-number, .fish-tag { font-size: .78rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .eyebrow { display: flex; align-items: center; gap: .7rem; color: var(--blue); }
 .live-dot { display: inline-block; width: .65rem; height: .65rem; flex: none; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 .25rem rgba(255, 13, 15, 0.25); animation: liveDotPulse 1.8s infinite; }
@@ -42,11 +42,11 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 }
 
 .hero-listen h1, h2 { margin: .55rem 0 1.1rem; font-weight: 800; letter-spacing: -.05em; line-height: .98; }
-.hero-listen h1 { font-size: clamp(3rem, 5.2vw, 5.2rem); max-width: 14ch; color: var(--deep); }
+.hero-listen h1 { font-size: clamp(3rem, 4.8vw, 5.2rem); max-width: 20ch; color: var(--deep); }
 .hero-listen h1 em, h2 em { font-family: Georgia, serif; font-weight: 400; color: var(--blue); }
-.hero-listen .lead { max-width: 34rem; font-size: clamp(1.05rem, 1.3vw, 1.22rem); line-height: 1.55; margin: 0; color: #274163; font-weight: 500; }
+.hero-listen .lead { max-width: 44rem; font-size: clamp(1.05rem, 1.25vw, 1.22rem); line-height: 1.55; margin: 0; color: #274163; font-weight: 500; }
 
-.hero-listen-layout { display: grid; grid-template-columns: 1.12fr 0.88fr; grid-template-areas: "intro locupez" "player chat"; gap: 2.2rem clamp(2rem, 3.5vw, 3.5rem); align-items: start; padding-top: 1.8rem; }
+.hero-listen-layout { display: grid; grid-template-columns: 1.08fr 0.92fr; grid-template-areas: "intro locupez" "player chat"; gap: 2.2rem clamp(1.5rem, 2vw, 2.5rem); align-items: start; padding-top: 1.6rem; }
 .hero-intro { grid-area: intro; }
 .mascot-card { grid-area: locupez; }
 .player-card { grid-area: player; }
@@ -143,19 +143,19 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .chat-card iframe { display: block; width: 100%; height: 440px; border: 2px solid rgba(255, 255, 255, 0.15); border-radius: .8rem; background: #0b2545; }
 
 /* FRANJA DE PECESITOS (CANVAS 2D ANTES DE LA SECCIÓN 02) */
-.fish-pond-section { background: linear-gradient(180deg, var(--cream) 0%, #eaf1fa 35%, #eaf1fa 65%, white 100%); padding: 1.5rem clamp(1.2rem, 4vw, 4.5rem) 2.5rem; }
-.fish-pond-inner { max-width: 1320px; margin: auto; }
+.fish-pond-section { background: linear-gradient(180deg, var(--cream) 0%, #eaf1fa 35%, #eaf1fa 65%, white 100%); padding: 1.5rem clamp(1rem, 2vw, 2.2rem) 2.5rem; }
+.fish-pond-inner { max-width: 1560px; margin: auto; }
 .fish-pond-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
 .fish-tag { color: var(--blue); }
 .fish-caption { margin: .2rem 0 0; color: #576d8a; font-size: .84rem; font-weight: 600; }
 .fish-icon { font-size: 1rem; color: var(--blue); }
-.canvas-wrapper { position: relative; width: 100%; height: 280px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: pointer; touch-action: none; }
+.canvas-wrapper { position: relative; width: 100%; height: 300px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: pointer; touch-action: none; }
 #fish-canvas { width: 100%; height: 100%; display: block; }
 
 /* SECCIÓN 02 / EN LA EMISORA */
-.schedule-section, .contact-section { padding: 3rem clamp(1.2rem, 4vw, 4.5rem) 5rem; }
+.schedule-section, .contact-section { padding: 3rem clamp(1rem, 2vw, 2.2rem) 5rem; }
 .schedule-section { background: white; }
-.schedule-section > *, .contact-section > * { max-width: 1320px; margin-left: auto; margin-right: auto; }
+.schedule-section > *, .contact-section > * { max-width: 1560px; margin-left: auto; margin-right: auto; }
 .section-number { padding-bottom: 1.2rem; border-bottom: 1px solid var(--line); color: #59718f; }
 .kicker { color: var(--blue); }
 h2 { font-size: clamp(2.4rem, 4.5vw, 4.4rem); }
@@ -192,7 +192,8 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .contact-links a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.4rem 0; border-bottom: 1px solid #ffffff50; color: white; font-size: 1.1rem; font-weight: 700; text-align: left; text-decoration: none; }
 .contact-links a:hover { color: var(--yellow); }
 
-footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2rem clamp(1.2rem, 4vw, 4.5rem); background: var(--blue); color: white; font-size: .8rem; }
+footer { padding: 2.2rem clamp(1rem, 2vw, 2.2rem); background: var(--blue); color: white; font-size: .8rem; }
+.footer-inner { max-width: 1560px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
 footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
 
 /* RESPONSIVE DESIGN */
@@ -233,7 +234,7 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .section-heading { align-items: start; flex-direction: column; gap: 0; }
   .schedule-note { align-items: start; }
   .weather-inline { padding: 0; border: 0; }
-  footer { flex-wrap: wrap; }
+  footer, .footer-inner { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
@@ -256,7 +257,7 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
     width: 175px;
   }
   .canvas-wrapper { height: 205px; }
-  footer p { order: 3; width: 100%; }
+  footer p, .footer-inner p { order: 3; width: 100%; text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
