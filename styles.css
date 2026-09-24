@@ -162,17 +162,21 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .status-pill { padding: .65rem 1rem; border: 1px solid var(--blue); border-radius: 999px; color: var(--blue); font-size: .8rem; font-weight: 700; white-space: nowrap; }
 .schedule-bottom { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 360px); align-items: start; gap: clamp(2rem, 4vw, 4rem); margin-top: 2rem; }
 
-/* BLOGS DE INTERÉS */
-.blogs-list { display: flex; flex-direction: column; gap: .9rem; }
-.blog-card { display: flex; align-items: center; justify-content: space-between; gap: 1.4rem; padding: 1.2rem 1.4rem; background: #f7fafc; border: 1px solid var(--line); border-radius: 1rem; text-decoration: none; color: var(--ink); transition: all .2s ease; }
-.blog-card:hover { background: #ffffff; border-color: var(--blue); box-shadow: 0 10px 24px rgba(13, 98, 217, 0.12); transform: translateY(-2px); }
-.blog-card-content { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
-.blog-tag { font-size: .73rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
-.blog-title { margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--deep); letter-spacing: -.02em; line-height: 1.25; transition: color .18s ease; }
-.blog-card:hover .blog-title { color: var(--blue); }
-.blog-desc { margin: 0; font-size: .88rem; color: #506884; line-height: 1.45; }
-.blog-arrow { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #eaf1fb; color: var(--blue); font-size: 1.2rem; font-weight: 700; flex-shrink: 0; transition: all .2s ease; }
-.blog-card:hover .blog-arrow { background: var(--blue); color: #ffffff; transform: translate(2px, -2px); }
+/* BLOGS DE INTERÉS - TARJETA ÚNICA DE DIRECTORIO */
+.blogs-card { background: #ffffff; border: 1px solid #d8e3f0; border-radius: 1.25rem; box-shadow: 0 12px 32px rgba(13, 98, 217, 0.08); overflow: hidden; }
+.blogs-link-list { list-style: none; margin: 0; padding: 0; }
+.blogs-link-item { border-bottom: 1px solid #edf2f8; }
+.blogs-link-item:last-child { border-bottom: none; }
+.blog-link-row { display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; padding: 1.25rem 1.6rem; text-decoration: none; color: var(--ink); transition: background-color .18s ease; }
+.blog-link-row:hover { background-color: #f5f9fe; }
+.blog-link-title { font-size: 1.12rem; font-weight: 700; color: var(--deep); letter-spacing: -.015em; line-height: 1.35; transition: color .18s ease; }
+.blog-link-row:hover .blog-link-title { color: var(--blue); }
+.blog-link-meta { display: inline-flex; align-items: center; gap: .6rem; color: #5f7a9d; font-size: .88rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; transition: color .18s ease; }
+.blog-link-row:hover .blog-link-meta { color: var(--blue); }
+.blog-link-url { font-size: .85rem; color: #627d9f; font-weight: 500; }
+.blog-link-row:hover .blog-link-url { color: var(--blue); }
+.blog-link-arrow { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #eaf1fb; color: var(--blue); font-size: 1rem; font-weight: 700; flex-shrink: 0; transition: transform .2s ease, background-color .2s ease, color .2s ease; }
+.blog-link-row:hover .blog-link-arrow { background: var(--blue); color: #ffffff; transform: translate(2px, -2px); }
 
 /* CLIMA NATIVO OPEN-METEO CON LA PACHA PROMINENTE Y EN COLOR */
 .weather-inline { padding: 1rem 0 0 1.5rem; border-left: 1px solid var(--line); }
@@ -263,9 +267,9 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .mascot-img {
     width: clamp(180px, 52vw, 220px);
   }
-  .blog-card { padding: 1rem 1.1rem; gap: .8rem; }
-  .blog-title { font-size: 1.05rem; }
-  .blog-arrow { width: 32px; height: 32px; font-size: 1rem; }
+  .blog-link-row { padding: 1.05rem 1.15rem; flex-direction: column; align-items: flex-start; gap: .45rem; }
+  .blog-link-title { font-size: 1.04rem; }
+  .blog-link-meta { width: 100%; justify-content: space-between; }
   .canvas-wrapper { height: 205px; }
   footer p, .footer-inner p { order: 3; width: 100%; text-align: center; }
 }
