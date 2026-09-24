@@ -124,16 +124,16 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 #alternate-frame iframe { display: block; width: 100%; height: 380px; margin-top: 1rem; border: 0; border-radius: .5rem; }
 
 /* MASCOTA OFICIAL: LOCUPEZ */
-.mascot-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.8rem 1.6rem 1.6rem; border-radius: 1.25rem; background: linear-gradient(145deg, #ffffff 0%, #edf4fc 100%); border: 1px solid #cce0f7; box-shadow: 0 16px 40px rgba(13, 98, 217, 0.12); position: relative; overflow: hidden; text-align: center; }
-.mascot-card::before { content: ""; position: absolute; width: 280px; height: 280px; background: radial-gradient(circle, rgba(13, 98, 217, 0.14) 0%, rgba(255, 208, 0, 0.1) 50%, transparent 70%); top: 38%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-.mascot-inner { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; position: relative; z-index: 1; width: 100%; text-align: center; }
+.mascot-card { display: flex; flex-direction: column; align-items: center; justify-content: center; aspect-ratio: 1 / 1; width: 100%; padding: clamp(1.8rem, 3vw, 2.5rem); border-radius: 1.25rem; background: linear-gradient(145deg, #ffffff 0%, #edf4fc 100%); border: 1px solid #cce0f7; box-shadow: 0 16px 40px rgba(13, 98, 217, 0.12); position: relative; overflow: hidden; text-align: center; }
+.mascot-card::before { content: ""; position: absolute; width: clamp(300px, 35vw, 420px); height: clamp(300px, 35vw, 420px); background: radial-gradient(circle, rgba(13, 98, 217, 0.14) 0%, rgba(255, 208, 0, 0.12) 50%, transparent 70%); top: 38%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.mascot-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem; position: relative; z-index: 1; width: 100%; text-align: center; }
 .mascot-img-wrap { display: flex; align-items: center; justify-content: center; width: 100%; }
-.mascot-img { display: block; width: clamp(190px, 20vw, 255px); height: auto; filter: drop-shadow(0 14px 28px rgba(9, 33, 64, 0.22)); transition: transform .38s cubic-bezier(0.34, 1.56, 0.64, 1), filter .35s ease; cursor: pointer; }
-.mascot-img:hover { transform: scale(1.12) rotate(-4deg); filter: drop-shadow(0 20px 36px rgba(13, 98, 217, 0.35)); }
+.mascot-img { display: block; width: clamp(210px, 22vw, 300px); height: auto; filter: drop-shadow(0 14px 28px rgba(9, 33, 64, 0.22)); transition: transform .38s cubic-bezier(0.34, 1.56, 0.64, 1), filter .35s ease; cursor: pointer; }
+.mascot-img:hover { transform: scale(1.1) rotate(-4deg); filter: drop-shadow(0 20px 36px rgba(13, 98, 217, 0.35)); }
 .mascot-img:active { transform: scale(0.96) rotate(2deg); }
-.mascot-info { display: flex; flex-direction: column; align-items: center; gap: .5rem; max-width: 24rem; }
-.mascot-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .85rem; border-radius: 999px; background: var(--blue); color: #ffffff; font-size: .82rem; font-weight: 800; letter-spacing: .03em; width: fit-content; box-shadow: 0 3px 10px rgba(13, 98, 217, 0.3); }
-.mascot-quote { margin: 0; font-size: .95rem; color: #1e3a5f; line-height: 1.45; font-style: italic; font-weight: 600; text-align: center; }
+.mascot-info { display: flex; flex-direction: column; align-items: center; gap: .55rem; max-width: 25rem; }
+.mascot-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .38rem .95rem; border-radius: 999px; background: var(--blue); color: #ffffff; font-size: .85rem; font-weight: 800; letter-spacing: .03em; width: fit-content; box-shadow: 0 3px 10px rgba(13, 98, 217, 0.3); }
+.mascot-quote { margin: 0; font-size: 1rem; color: #1e3a5f; line-height: 1.45; font-style: italic; font-weight: 600; text-align: center; }
 
 /* CHAT CARD EN AZUL DE MARCA */
 .chat-card { padding: clamp(1.5rem, 2.5vw, 2rem); display: flex; flex-direction: column; }
@@ -215,13 +215,14 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .hero-listen-layout {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 1.8rem;
     padding-top: 1.2rem;
   }
   .hero-intro { order: 1; }
-  .player-card { order: 2; }
-  .mascot-card { order: 3; }
-  .chat-card { order: 4; }
+  .player-card { order: 2; width: 100%; }
+  .mascot-card { order: 3; max-width: 480px; width: 100%; align-self: center; }
+  .chat-card { order: 4; width: 100%; }
   
   .hero-listen h1 { font-size: clamp(2.6rem, 10vw, 3.8rem); max-width: 100%; }
   
