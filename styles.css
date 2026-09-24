@@ -160,10 +160,19 @@ h2 { font-size: clamp(2.4rem, 4.5vw, 4.4rem); }
 h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; padding-top: 2.5rem; }
 .status-pill { padding: .65rem 1rem; border: 1px solid var(--blue); border-radius: 999px; color: var(--blue); font-size: .8rem; font-weight: 700; white-space: nowrap; }
-.schedule-bottom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px); align-items: start; gap: clamp(2rem, 5vw, 5rem); margin-top: 1.5rem; }
-.schedule-note { display: flex; align-items: center; gap: 2rem; padding: 1.5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.schedule-note span { color: var(--blue); font-size: 2rem; }
-.schedule-note p { max-width: 37rem; line-height: 1.6; }
+.schedule-bottom { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 360px); align-items: start; gap: clamp(2rem, 4vw, 4rem); margin-top: 2rem; }
+
+/* BLOGS DE INTERÉS */
+.blogs-list { display: flex; flex-direction: column; gap: .9rem; }
+.blog-card { display: flex; align-items: center; justify-content: space-between; gap: 1.4rem; padding: 1.2rem 1.4rem; background: #f7fafc; border: 1px solid var(--line); border-radius: 1rem; text-decoration: none; color: var(--ink); transition: all .2s ease; }
+.blog-card:hover { background: #ffffff; border-color: var(--blue); box-shadow: 0 10px 24px rgba(13, 98, 217, 0.12); transform: translateY(-2px); }
+.blog-card-content { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.blog-tag { font-size: .73rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+.blog-title { margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--deep); letter-spacing: -.02em; line-height: 1.25; transition: color .18s ease; }
+.blog-card:hover .blog-title { color: var(--blue); }
+.blog-desc { margin: 0; font-size: .88rem; color: #506884; line-height: 1.45; }
+.blog-arrow { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #eaf1fb; color: var(--blue); font-size: 1.2rem; font-weight: 700; flex-shrink: 0; transition: all .2s ease; }
+.blog-card:hover .blog-arrow { background: var(--blue); color: #ffffff; transform: translate(2px, -2px); }
 
 /* CLIMA NATIVO OPEN-METEO CON LA PACHA PROMINENTE Y EN COLOR */
 .weather-inline { padding: 1rem 0 0 1.5rem; border-left: 1px solid var(--line); }
@@ -230,7 +239,6 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .schedule-bottom, .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
   .schedule-section, .contact-section { padding-bottom: 4rem; }
   .section-heading { align-items: start; flex-direction: column; gap: 0; }
-  .schedule-note { align-items: start; }
   .weather-inline { padding: 0; border: 0; }
   footer, .footer-inner { flex-wrap: wrap; }
 }
@@ -254,6 +262,9 @@ footer img { width: 100px; height: auto; } footer a { white-space: nowrap; }
   .mascot-img {
     width: 175px;
   }
+  .blog-card { padding: 1rem 1.1rem; gap: .8rem; }
+  .blog-title { font-size: 1.05rem; }
+  .blog-arrow { width: 32px; height: 32px; font-size: 1rem; }
   .canvas-wrapper { height: 205px; }
   footer p, .footer-inner p { order: 3; width: 100%; text-align: center; }
 }
