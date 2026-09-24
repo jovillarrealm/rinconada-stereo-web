@@ -187,8 +187,8 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .contact-section .kicker { color: var(--yellow); }
 .contact-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: clamp(2rem, 8vw, 8rem); padding-top: 3.5rem; }
 .contact-links { display: grid; }
-.contact-links a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.4rem 0; border-bottom: 1px solid #ffffff50; color: white; font-size: 1.1rem; font-weight: 700; text-align: left; text-decoration: none; }
-.contact-links a:hover { color: var(--yellow); }
+.contact-links a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.05rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.25); color: white; font-size: 1.05rem; font-weight: 700; text-align: left; text-decoration: none; transition: color .18s ease, padding-left .18s ease; }
+.contact-links a:hover { color: var(--yellow); padding-left: .5rem; }
 
 footer { padding: 2.2rem clamp(1rem, 2vw, 2.2rem); background: var(--blue); color: white; font-size: .8rem; }
 .footer-inner { max-width: 1560px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
