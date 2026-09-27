@@ -4,13 +4,124 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#3676ce">
-    <meta name="description" content="Rinconada Stereo: escucha nuestra señal en vivo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada.">
-    <title>Rinconada Stereo — Un encuentro con tu región</title>
+    <title>Rinconada Stereo — Emisora en vivo · Un encuentro con tu región</title>
+    <meta name="description" content="Escucha la señal en vivo de Rinconada Stereo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Radio comunitaria, música de acordeón y noticias de nuestra tierra.">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <link rel="canonical" href="https://rinconadastereo.com/">
+
+    <!-- Geo-etiquetas para posicionamiento regional y local (Magdalena / Caribe) -->
+    <meta name="geo.region" content="CO-MAG">
+    <meta name="geo.placename" content="La Pacha, San Sebastián de Buenavista, Magdalena, Colombia">
+    <meta name="geo.position" content="9.2883;-74.3411">
+    <meta name="ICBM" content="9.2883, -74.3411">
+
+    <!-- Open Graph (WhatsApp, Facebook, LinkedIn, Telegram) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Rinconada Stereo">
+    <meta property="og:title" content="Rinconada Stereo — Un encuentro con tu región">
+    <meta property="og:description" content="Señal en vivo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Acordeón, memoria y cultura comunitaria.">
+    <meta property="og:url" content="https://rinconadastereo.com/">
+    <meta property="og:image" content="https://rinconadastereo.com/assets/og-cover.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Rinconada Stereo — Transmisión en directo desde La Pacha, Magdalena">
+    <meta property="og:locale" content="es_CO">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@RinconadaStereo">
+    <meta name="twitter:creator" content="@RinconadaStereo">
+    <meta name="twitter:title" content="Rinconada Stereo — Un encuentro con tu región">
+    <meta name="twitter:description" content="Señal en directo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada.">
+    <meta name="twitter:image" content="https://rinconadastereo.com/assets/og-cover.jpg">
+
+    <!-- Favicons -->
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192x192.png">
+
+    <!-- Datos Estructurados Schema.org (JSON-LD) para Google Search y Knowledge Graph -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://rinconadastereo.com/#website",
+          "url": "https://rinconadastereo.com/",
+          "name": "Rinconada Stereo",
+          "description": "Emisora en vivo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada.",
+          "inLanguage": "es-CO"
+        },
+        {
+          "@type": ["RadioStation", "BroadcastService"],
+          "@id": "https://rinconadastereo.com/#radiostation",
+          "name": "Rinconada Stereo",
+          "alternateName": ["ERS", "Emisora Rinconada Stereo"],
+          "url": "https://rinconadastereo.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://rinconadastereo.com/assets/logo-rinconada.png"
+          },
+          "image": "https://rinconadastereo.com/assets/og-cover.jpg",
+          "description": "Emisora en vivo transmitiendo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada.",
+          "broadcastDisplayName": "Rinconada Stereo",
+          "broadcastTimezone": "America/Bogota",
+          "inLanguage": "es-CO",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "La Pacha",
+            "addressRegion": "Magdalena",
+            "addressCountry": "CO"
+          },
+          "areaServed": [
+            {
+              "@type": "AdministrativeArea",
+              "name": "La Pacha, Magdalena"
+            },
+            {
+              "@type": "AdministrativeArea",
+              "name": "San Sebastián de Buenavista"
+            },
+            {
+              "@type": "AdministrativeArea",
+              "name": "Región Caribe, Colombia"
+            }
+          ],
+          "sameAs": [
+            "https://www.facebook.com/Rinconada-Stereo-100541578730385",
+            "https://instagram.com/rinconadastereo",
+            "https://www.youtube.com/@RinconadaStereo_2022",
+            "https://x.com/RinconadaStereo"
+          ],
+          "potentialAction": {
+            "@type": "ListenAction",
+            "target": [
+              {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://play14.tikast.com:22012/stream",
+                "actionPlatform": [
+                  "http://schema.org/DesktopWebPlatform",
+                  "http://schema.org/MobileWebPlatform"
+                ]
+              }
+            ],
+            "expectsAcceptanceOf": {
+              "@type": "Offer",
+              "category": "free",
+              "eligibleRegion": {
+                "@type": "Country",
+                "name": "CO"
+              }
+            }
+          }
+        }
+      ]
+    }
+    </script>
+
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
   </head>

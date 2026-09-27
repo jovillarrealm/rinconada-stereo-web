@@ -1,0 +1,5 @@
+# robots.txt para Rinconada Stereo
+User-agent: *
+Allow: /
+
+Sitemap: https://rinconadastereo.com/sitemap.xml
