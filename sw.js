@@ -9,6 +9,7 @@ const PRECACHE_ASSETS = [
   'app.js',
   'manifest.webmanifest',
   'favicon.ico',
+  'assets/favicon.svg',
   'assets/logo-rinconada.avif',
   'assets/logo-rinconada.webp',
   'assets/logo-rinconada.png',
