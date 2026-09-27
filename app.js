@@ -869,3 +869,13 @@ if (weatherSection && 'IntersectionObserver' in window) {
     }, { timeout: 5000 });
   }
 })();
+
+// --- REGISTRO DE SERVICE WORKER (PWA & 0 MS REPEAT VISITS) ---
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      // Registro fallido o entorno sin soporte HTTPS
+    });
+  });
+}
+

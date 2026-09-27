@@ -1,0 +1,31 @@
+{
+  "name": "Rinconada Stereo",
+  "short_name": "Rinconada",
+  "description": "Emisora en vivo desde La Pacha, Magdalena. Un encuentro con tu región.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fc",
+  "theme_color": "#0d62d9",
+  "lang": "es-CO",
+  "categories": ["music", "news", "entertainment"],
+  "icons": [
+    {
+      "src": "assets/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
