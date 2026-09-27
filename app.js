@@ -12,12 +12,23 @@ const eqBars = document.querySelector('#eq-bars');
 
 function updateMuteIcons() {
   if (!iconVolOn || !iconVolMute) return;
-  if (audio.muted || audio.volume === 0) {
+  const isMuted = audio.muted || audio.volume === 0;
+  if (isMuted) {
     iconVolOn.style.display = 'none';
     iconVolMute.style.display = 'block';
   } else {
     iconVolOn.style.display = 'block';
     iconVolMute.style.display = 'none';
+  }
+  if (muteBtn) {
+    muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+    muteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+    muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
+  }
+  if (volumeSlider) {
+    const volPercent = Math.round(audio.volume * 100);
+    volumeSlider.setAttribute('aria-valuenow', isMuted ? 0 : volPercent);
+    volumeSlider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : `${volPercent} por ciento`);
   }
 }
 
@@ -25,6 +36,7 @@ if (audio && playBtn) {
   // Inicializar volumen
   if (volumeSlider) {
     audio.volume = parseFloat(volumeSlider.value);
+    updateMuteIcons();
   }
 
   playBtn.addEventListener('click', () => {
@@ -67,12 +79,20 @@ if (audio && playBtn) {
     if (iconPlay) iconPlay.style.display = 'none';
     if (iconPause) iconPause.style.display = 'block';
     if (eqBars) eqBars.classList.add('is-playing');
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', 'Pausar señal en vivo');
+      playBtn.setAttribute('title', 'Pausar señal en vivo');
+    }
   });
 
   audio.addEventListener('playing', () => {
     if (iconPlay) iconPlay.style.display = 'none';
     if (iconPause) iconPause.style.display = 'block';
     if (eqBars) eqBars.classList.add('is-playing');
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', 'Pausar señal en vivo');
+      playBtn.setAttribute('title', 'Pausar señal en vivo');
+    }
     if (status) {
       status.textContent = 'Conectado · Señal en directo';
       status.className = 'stream-status-tag is-playing';
@@ -94,6 +114,10 @@ if (audio && playBtn) {
     if (iconPlay) iconPlay.style.display = 'block';
     if (iconPause) iconPause.style.display = 'none';
     if (eqBars) eqBars.classList.remove('is-playing');
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', 'Reproducir señal en vivo');
+      playBtn.setAttribute('title', 'Reproducir señal en vivo');
+    }
     if (status) {
       status.textContent = 'Señal en pausa';
       status.className = 'stream-status-tag';
@@ -107,6 +131,10 @@ if (audio && playBtn) {
     if (iconPlay) iconPlay.style.display = 'block';
     if (iconPause) iconPause.style.display = 'none';
     if (eqBars) eqBars.classList.remove('is-playing');
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', 'Reproducir señal en vivo');
+      playBtn.setAttribute('title', 'Reproducir señal en vivo');
+    }
     if (status) {
       status.textContent = 'Error al conectar';
       status.className = 'stream-status-tag is-error';
@@ -754,6 +782,20 @@ if (weatherSection && 'IntersectionObserver' in window) {
 
   canvas.addEventListener('pointerleave', () => {
     pointer.active = false;
+  });
+
+  // Interacción por teclado (WCAG 2.1.1 Operable por teclado)
+  canvas.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      const rx = (width / 2) + (Math.random() * 120 - 60);
+      const ry = (height / 2) + (Math.random() * 80 - 40);
+      pointer.x = rx;
+      pointer.y = ry;
+      pointer.active = true;
+      dropFood(rx, ry);
+      if (reducedMotion) render();
+    }
   });
 
   window.addEventListener('resize', () => {

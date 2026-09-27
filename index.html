@@ -220,7 +220,7 @@
               </div>
 
               <div class="custom-volume-box">
-                <button class="custom-mute-btn" id="mute-btn" type="button" aria-label="Silenciar o activar sonido" title="Silenciar / Activar sonido">
+                <button class="custom-mute-btn" id="mute-btn" type="button" aria-label="Silenciar sonido" aria-pressed="false" title="Silenciar sonido">
                   <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                     <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -232,7 +232,8 @@
                     <line x1="17" y1="9" x2="23" y2="15"></line>
                   </svg>
                 </button>
-                <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen">
+                <label for="volume-slider" class="sr-only">Control de volumen</label>
+                <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="90">
               </div>
             </div>
 
@@ -280,7 +281,7 @@
             <span class="fish-icon" aria-hidden="true">〰 🐟 〰</span>
           </div>
           <div class="canvas-wrapper">
-            <canvas id="fish-canvas" role="img" aria-label="Peces de la ciénaga nadando con fluidez"></canvas>
+            <canvas id="fish-canvas" tabindex="0" role="application" aria-label="Estanque interactivo con peces de la ciénaga. Pulsa Espacio o Enter para alimentarlos." title="Estanque interactivo (Espacio o Enter para alimentar a los peces)"></canvas>
           </div>
         </div>
       </section>
@@ -300,6 +301,7 @@
                   <span class="blog-link-title">Pacheros de pura cepa</span>
                   <span class="blog-link-meta">
                     <span class="blog-link-url">pacherosdepuracepa.wordpress.com</span>
+                    <span class="sr-only">(se abre en una pestaña nueva)</span>
                     <span class="blog-link-arrow" aria-hidden="true">↗</span>
                   </span>
                 </a>
@@ -309,6 +311,7 @@
                   <span class="blog-link-title">Mi pueblo olvidado</span>
                   <span class="blog-link-meta">
                     <span class="blog-link-url">mipuebloolvidado.wordpress.com</span>
+                    <span class="sr-only">(se abre en una pestaña nueva)</span>
                     <span class="blog-link-arrow" aria-hidden="true">↗</span>
                   </span>
                 </a>
@@ -318,6 +321,7 @@
                   <span class="blog-link-title">Música de acordeón del Caribe</span>
                   <span class="blog-link-meta">
                     <span class="blog-link-url">acordeonenelcaribe.blogspot.com</span>
+                    <span class="sr-only">(se abre en una pestaña nueva)</span>
                     <span class="blog-link-arrow" aria-hidden="true">↗</span>
                   </span>
                 </a>
@@ -327,6 +331,7 @@
                   <span class="blog-link-title">Festival Indepa</span>
                   <span class="blog-link-meta">
                     <span class="blog-link-url">festivalindepa.wordpress.com</span>
+                    <span class="sr-only">(se abre en una pestaña nueva)</span>
                     <span class="blog-link-arrow" aria-hidden="true">↗</span>
                   </span>
                 </a>
@@ -336,6 +341,7 @@
                   <span class="blog-link-title">La Biblia del Vallenato: Wilfredo Rosales — Efemérides Vallenatas</span>
                   <span class="blog-link-meta">
                     <span class="blog-link-url">youtube.com</span>
+                    <span class="sr-only">(se abre en una pestaña nueva)</span>
                     <span class="blog-link-arrow" aria-hidden="true">↗</span>
                   </span>
                 </a>
@@ -349,7 +355,7 @@
             <div class="weather-card-content" id="weather-card">
               <div class="weather-loading" id="weather-status">Consultando pronóstico regional…</div>
             </div>
-            <a class="weather-source" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Datos de Open-Meteo (CC BY 4.0) ↗</a>
+            <a class="weather-source" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Datos de Open-Meteo (CC BY 4.0) <span class="sr-only">(se abre en una pestaña nueva)</span><span aria-hidden="true">↗</span></a>
           </aside>
         </div>
       </section>
@@ -360,11 +366,11 @@
         <div class="contact-layout">
           <div><p class="kicker">Hablemos</p><h2 id="contact-title">La radio se hace <em>entre todos.</em></h2></div>
           <div class="contact-links">
-            <a href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer">WhatsApp <span aria-hidden="true">↗</span></a>
-            <a href="https://www.facebook.com/Rinconada-Stereo-100541578730385" target="_blank" rel="noopener noreferrer">Facebook <span aria-hidden="true">↗</span></a>
-            <a href="https://instagram.com/rinconadastereo" target="_blank" rel="noopener noreferrer">Instagram <span aria-hidden="true">↗</span></a>
-            <a href="https://www.youtube.com/@RinconadaStereo_2022" target="_blank" rel="noopener noreferrer">YouTube <span aria-hidden="true">↗</span></a>
-            <a href="https://x.com/RinconadaStereo" target="_blank" rel="noopener noreferrer">X (Twitter) <span aria-hidden="true">↗</span></a>
+            <a href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer">WhatsApp <span class="sr-only">(se abre en una pestaña nueva)</span><span aria-hidden="true">↗</span></a>
+            <a href="https://www.facebook.com/Rinconada-Stereo-100541578730385" target="_blank" rel="noopener noreferrer">Facebook <span class="sr-only">(se abre en una pestaña nueva)</span><span aria-hidden="true">↗</span></a>
+            <a href="https://instagram.com/rinconadastereo" target="_blank" rel="noopener noreferrer">Instagram <span class="sr-only">(se abre en una pestaña nueva)</span><span aria-hidden="true">↗</span></a>
+            <a href="https://www.youtube.com/@RinconadaStereo_2022" target="_blank" rel="noopener noreferrer">YouTube <span class="sr-only">(se abre en una pestaña nueva)</span><span aria-hidden="true">↗</span></a>
+            <a href="https://x.com/RinconadaStereo" target="_blank" rel="noopener noreferrer">X (Twitter) <span class="sr-only">(se abre en una pestaña nueva)</span><span aria-hidden="true">↗</span></a>
           </div>
         </div>
       </section>
