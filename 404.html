@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0d62d9">
+    <meta name="description" content="Página no encontrada — Rinconada Stereo. Vuelve a la señal en vivo desde La Pacha, Magdalena.">
+    <title>Página no encontrada (404) — Rinconada Stereo</title>
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <script>
+      // Detección inteligente de la ruta base
+      const path = window.location.pathname;
+      const pathLower = path.toLowerCase();
+      let basePath = './';
+
+      if (window.location.hostname.endsWith('github.io')) {
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length > 0 && parts[0] === 'rinconada-stereo-web') {
+          basePath = '/rinconada-stereo-web/';
+        } else {
+          basePath = '/';
+        }
+      } else if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+        basePath = '/';
+      }
+
+      // Redirección inmediata para rutas heredadas esenciales de la web anterior
+      if (pathLower.includes('escuchanos-en-vivo') || pathLower.includes('en-vivo') || pathLower.includes('streaming') || pathLower.includes('radio-en-vivo')) {
+        window.location.replace(basePath);
+      }
+    </script>
+    <style>
+      :root {
+        --blue: #0d62d9;
+        --blue-dark: #0a4aa3;
+        --deep: #092140;
+        --ink: #112239;
+        --cream: #f4f7fc;
+        --yellow: #ffd000;
+        --red: #ff0d0f;
+        --card-blue-1: #135fc7;
+        --card-blue-2: #0b4393;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: var(--cream);
+        color: var(--ink);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .site-header {
+        background: linear-gradient(180deg, #0e5ed2 0%, #0a4ea8 100%);
+        color: #ffffff;
+        padding: 1.2rem 1rem;
+        box-shadow: 0 4px 20px rgba(9, 33, 64, 0.15);
+        text-align: center;
+      }
+      .header-brand {
+        display: inline-block;
+        text-decoration: none;
+      }
+      .header-brand img {
+        width: clamp(200px, 24vw, 260px);
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.16));
+      }
+      .container {
+        flex: 1;
+        max-width: 820px;
+        width: 100%;
+        margin: auto;
+        padding: clamp(2rem, 5vw, 4rem) 1.2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .card-404 {
+        background: #ffffff;
+        border-radius: 1.5rem;
+        padding: clamp(2rem, 4vw, 3.2rem) clamp(1.5rem, 3.5vw, 2.5rem);
+        box-shadow: 0 16px 40px rgba(9, 33, 64, 0.08);
+        border: 1px solid #d8e3f2;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.4rem;
+      }
+      .mascot-wrap {
+        width: clamp(140px, 20vw, 190px);
+        height: clamp(140px, 20vw, 190px);
+        border-radius: 50%;
+        background: radial-gradient(circle, #e2edfd 0%, #c4dcfe 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(13, 98, 217, 0.18);
+        padding: 0.8rem;
+      }
+      .mascot-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        animation: floatMascot 3s ease-in-out infinite alternate;
+      }
+      @keyframes floatMascot {
+        0% { transform: translateY(0px) rotate(0deg); }
+        100% { transform: translateY(-8px) rotate(2deg); }
+      }
+      .badge-404 {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #fee2e2;
+        color: var(--red);
+        font-weight: 800;
+        font-size: 0.85rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 0.35rem 1rem;
+        border-radius: 999px;
+      }
+      .title-404 {
+        font-size: clamp(2rem, 3.6vw, 3rem);
+        color: var(--deep);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.1;
+      }
+      .title-404 em {
+        font-family: Georgia, serif;
+        font-style: italic;
+        color: var(--blue);
+      }
+      .desc-404 {
+        color: #3b5270;
+        font-size: clamp(1.02rem, 1.2vw, 1.15rem);
+        line-height: 1.55;
+        max-width: 50ch;
+      }
+      .actions-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 0.6rem;
+      }
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: linear-gradient(135deg, var(--card-blue-1) 0%, var(--card-blue-2) 100%);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        padding: 0.85rem 1.8rem;
+        border-radius: 999px;
+        text-decoration: none;
+        box-shadow: 0 8px 24px rgba(11, 67, 147, 0.35);
+        transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(11, 67, 147, 0.45);
+        color: #ffffff;
+      }
+      .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #ffffff;
+        color: var(--blue);
+        border: 2px solid var(--blue);
+        font-weight: 700;
+        font-size: 1.02rem;
+        padding: 0.8rem 1.6rem;
+        border-radius: 999px;
+        text-decoration: none;
+        transition: background 0.16s ease, color 0.16s ease;
+      }
+      .btn-secondary:hover {
+        background: #eef5ff;
+      }
+      .footer-note {
+        margin-top: 1.8rem;
+        font-size: 0.88rem;
+        color: #647b96;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="header-brand" id="brand-link" href="./" aria-label="Rinconada Stereo, ir a la portada">
+        <img id="logo-img" src="assets/logo-rinconada.png" width="260" height="115" alt="Rinconada Stereo">
+      </a>
+    </header>
+
+    <main class="container">
+      <div class="card-404">
+        <div class="mascot-wrap">
+          <img id="locupez-img" src="assets/locupez.png" width="180" height="180" alt="Locupez, la mascota de Rinconada Stereo" class="mascot-img">
+        </div>
+
+        <span class="badge-404">Error 404</span>
+        <h1 class="title-404">¡Esa página se la llevó la <em>corriente!</em></h1>
+
+        <p class="desc-404">
+          La dirección que buscas no existe o fue reorganizada en nuestra nueva plataforma. La señal en directo y el chat están activos en la portada principal.
+        </p>
+
+        <div class="actions-group">
+          <a class="btn-primary" id="home-link" href="./">
+            <span>📻</span> Ir a la señal en vivo
+          </a>
+          <a class="btn-secondary" id="blogs-link" href="./#blogs">
+            <span>📰</span> Ver blogs de interés
+          </a>
+        </div>
+      </div>
+
+      <p class="footer-note">Rinconada Stereo — Desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada.</p>
+    </main>
+
+    <script>
+      // Asegurar que las imágenes y enlaces apunten siempre a la raíz correcta en entornos con subdirectorios
+      if (basePath !== './') {
+        document.getElementById('home-link').href = basePath;
+        document.getElementById('brand-link').href = basePath;
+        document.getElementById('blogs-link').href = basePath + '#blogs';
+        document.getElementById('logo-img').src = basePath + 'assets/logo-rinconada.png';
+        document.getElementById('locupez-img').src = basePath + 'assets/locupez.png';
+      }
+    </script>
+  </body>
+</html>
