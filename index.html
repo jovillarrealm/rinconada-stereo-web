@@ -137,6 +137,9 @@
     }
     </script>
 
+    <!-- Precarga de imagen crítica LCP (Logo en formato moderno AVIF) -->
+    <link rel="preload" as="image" href="assets/logo-rinconada.avif" type="image/avif">
+
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
   </head>
@@ -148,7 +151,7 @@
           <picture>
             <source type="image/avif" srcset="assets/logo-rinconada.avif">
             <source type="image/webp" srcset="assets/logo-rinconada.webp">
-            <img src="assets/logo-rinconada.png" width="300" height="133" alt="Rinconada Stereo">
+            <img src="assets/logo-rinconada.png" width="300" height="133" alt="Rinconada Stereo" fetchpriority="high" decoding="async">
           </picture>
         </a>
         <nav aria-label="Principal">
@@ -259,7 +262,7 @@
                 <picture>
                   <source type="image/avif" srcset="assets/locupez.avif">
                   <source type="image/webp" srcset="assets/locupez.webp">
-                  <img src="assets/locupez.png" width="300" height="300" alt="Locupez, pez locutor de Rinconada Stereo" class="mascot-img">
+                  <img src="assets/locupez.png" width="300" height="300" alt="Locupez, pez locutor de Rinconada Stereo" class="mascot-img" decoding="async">
                 </picture>
               </div>
               <div class="mascot-info">
