@@ -268,6 +268,40 @@ if (alternate) {
   });
 }
 
+// --- CARGA DIFERIDA INTELIGENTE DEL CHAT (CBOX) ---
+const chatIframe = document.querySelector('#chat iframe[data-src]');
+if (chatIframe) {
+  let chatLoaded = false;
+  const loadChat = () => {
+    if (chatLoaded) return;
+    chatLoaded = true;
+    const realSrc = chatIframe.getAttribute('data-src');
+    if (realSrc) {
+      chatIframe.src = realSrc;
+      chatIframe.removeAttribute('data-src');
+    }
+  };
+
+  // Carga anticipada si el usuario interactúa o enfoca la tarjeta del chat
+  const chatCard = document.querySelector('#chat');
+  if (chatCard) {
+    ['pointerenter', 'touchstart', 'focusin'].forEach(evt => {
+      chatCard.addEventListener(evt, loadChat, { once: true, passive: true });
+    });
+  }
+
+  // Carga en tiempo de inactividad para no competir con el reproductor ni con el render inicial
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => {
+      setTimeout(loadChat, 1200);
+    }, { timeout: 3500 });
+  } else {
+    window.addEventListener('load', () => {
+      setTimeout(loadChat, 1500);
+    }, { once: true });
+  }
+}
+
 // --- CLIMA NATIVO REGIONAL CON OPEN-METEO (LA PACHA PROMINENTE) ---
 const weatherCard = document.querySelector('#weather-card');
 
