@@ -3,3 +3,5 @@ User-agent: *
 Allow: /
 
 Sitemap: https://rinconadastereo.com/sitemap.xml
+# Agentic Web
+# llms.txt: https://rinconadastereo.com/llms.txt
