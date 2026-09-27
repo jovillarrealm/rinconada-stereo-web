@@ -77,6 +77,10 @@ if (audio && playBtn) {
       status.textContent = 'Conectado · Señal en directo';
       status.className = 'stream-status-tag is-playing';
     }
+    if (typeof updatePollingSchedule === 'function') {
+      fetchLiveTrack();
+      updatePollingSchedule();
+    }
   });
 
   audio.addEventListener('waiting', () => {
@@ -93,6 +97,9 @@ if (audio && playBtn) {
     if (status) {
       status.textContent = 'Señal en pausa';
       status.className = 'stream-status-tag';
+    }
+    if (typeof updatePollingSchedule === 'function') {
+      updatePollingSchedule();
     }
   });
 
@@ -189,21 +196,33 @@ function fetchLiveTrack() {
   document.head.appendChild(script);
 }
 
-// Iniciar sondeo de metadatos (inmediato y periódico)
-fetchLiveTrack();
-metaPollInterval = setInterval(fetchLiveTrack, 8000);
-
-// Ahorro de recursos si la pestaña pasa a segundo plano
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    if (metaPollInterval) clearInterval(metaPollInterval);
-    // Sondeo lento en segundo plano (cada 30s)
-    metaPollInterval = setInterval(fetchLiveTrack, 30000);
-  } else {
-    if (metaPollInterval) clearInterval(metaPollInterval);
-    fetchLiveTrack();
-    metaPollInterval = setInterval(fetchLiveTrack, 8000);
+function updatePollingSchedule() {
+  if (metaPollInterval) {
+    clearInterval(metaPollInterval);
+    metaPollInterval = null;
   }
+  const isPlaying = audio && !audio.paused;
+  const isHidden = document.hidden;
+
+  let intervalMs;
+  if (isHidden) {
+    intervalMs = isPlaying ? 30000 : 60000;
+  } else {
+    intervalMs = isPlaying ? 8000 : 30000;
+  }
+  metaPollInterval = setInterval(fetchLiveTrack, intervalMs);
+}
+
+// Iniciar sondeo de metadatos (inmediato y adaptativo según estado)
+fetchLiveTrack();
+updatePollingSchedule();
+
+// Ahorro de recursos si la pestaña pasa a segundo plano o vuelve al frente
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    fetchLiveTrack();
+  }
+  updatePollingSchedule();
 });
 
 // Respaldo de iframe virtualtronics en details
