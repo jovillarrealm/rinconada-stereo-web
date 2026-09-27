@@ -169,23 +169,6 @@
         box-shadow: 0 12px 28px rgba(11, 67, 147, 0.45);
         color: #ffffff;
       }
-      .btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: #ffffff;
-        color: var(--blue);
-        border: 2px solid var(--blue);
-        font-weight: 700;
-        font-size: 1.02rem;
-        padding: 0.8rem 1.6rem;
-        border-radius: 999px;
-        text-decoration: none;
-        transition: background 0.16s ease, color 0.16s ease;
-      }
-      .btn-secondary:hover {
-        background: #eef5ff;
-      }
       .footer-note {
         margin-top: 1.8rem;
         font-size: 0.88rem;
@@ -217,9 +200,6 @@
           <a class="btn-primary" id="home-link" href="./">
             <span>📻</span> Ir a la señal en vivo
           </a>
-          <a class="btn-secondary" id="blogs-link" href="./#blogs">
-            <span>📰</span> Ver blogs de interés
-          </a>
         </div>
       </div>
 
@@ -231,7 +211,6 @@
       if (basePath !== './') {
         document.getElementById('home-link').href = basePath;
         document.getElementById('brand-link').href = basePath;
-        document.getElementById('blogs-link').href = basePath + '#blogs';
         document.getElementById('logo-img').src = basePath + 'assets/logo-rinconada.png';
         document.getElementById('locupez-img').src = basePath + 'assets/locupez.png';
       }
