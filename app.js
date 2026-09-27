@@ -833,28 +833,39 @@ if (weatherSection && 'IntersectionObserver' in window) {
   });
 
   window.addEventListener('resize', () => {
+    if (!initialized) return;
     resize();
     if (reducedMotion) render();
   });
 
-  resize();
-  initFish();
-
-  if (reducedMotion) {
-    render();
-    return;
+  let initialized = false;
+  function ensurePondReady() {
+    if (initialized) return;
+    initialized = true;
+    resize();
+    initFish();
+    if (reducedMotion) render();
   }
 
   if ('IntersectionObserver' in window) {
     const pondObserver = new IntersectionObserver((entries) => {
       if (entries.some(e => e.isIntersecting)) {
-        start();
+        ensurePondReady();
+        if (!reducedMotion) start();
       } else {
         stop();
       }
-    }, { threshold: 0.05 });
+    }, { rootMargin: '150px', threshold: 0.02 });
     pondObserver.observe(canvas);
   } else {
-    start();
+    ensurePondReady();
+    if (!reducedMotion) start();
+  }
+
+  // En caso de que el navegador quede inactivo, pre-inicializar en segundo plano sin bloquear
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => {
+      ensurePondReady();
+    }, { timeout: 5000 });
   }
 })();
