@@ -167,17 +167,17 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .canvas-wrapper { position: relative; width: 100%; height: 300px; border-radius: 1rem; overflow: hidden; background: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%); border: 1px solid #bfd6f0; box-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08); cursor: pointer; touch-action: none; }
 #fish-canvas { width: 100%; height: 100%; display: block; }
 
-/* SECCIÓN 02 / EN LA EMISORA Y SECCIÓN 03 / CONTACTO */
-.schedule-section, .contact-section {
-  padding: 3rem clamp(1rem, 2vw, 2.2rem) 5rem;
-  content-visibility: auto;
-}
+/* SECCIÓN 02 / EN LA EMISORA */
 .schedule-section {
+  padding: 3rem clamp(1rem, 2vw, 2.2rem) 5rem;
   background: white;
+  content-visibility: auto;
   contain-intrinsic-size: auto 650px;
 }
+
+/* SECCIÓN 03 / CONTACTO */
 .contact-section {
-  contain-intrinsic-size: auto 350px;
+  padding: 3rem clamp(1rem, 2vw, 2.2rem) 5rem;
 }
 .schedule-section > *, .contact-section > * { max-width: 1560px; margin-left: auto; margin-right: auto; }
 .section-number { padding-bottom: 1.2rem; border-bottom: 1px solid var(--line); color: #59718f; }
