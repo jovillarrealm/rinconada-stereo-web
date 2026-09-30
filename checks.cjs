@@ -256,9 +256,11 @@ function checkCloudflareConfigs() {
   assert.equal(wranglerConfig.preview_urls, true, 'wrangler.jsonc must explicitly configure preview_urls to silence CI warning');
   assert.equal(wranglerConfig.assets.not_found_handling, '404-page', 'wrangler.jsonc must route 404s to 404.html');
   assert.equal(wranglerConfig.assets.directory, '.', 'wrangler.jsonc assets directory must be .');
+  assert.equal(wranglerConfig.assets.binding, undefined, 'wrangler.jsonc must not declare an asset binding for an assets-only Worker');
 
   const assetsIgnore = source('.assetsignore');
   assert.ok(assetsIgnore.includes('.git/'), '.assetsignore must exclude .git/ to prevent source leak');
+  assert.ok(assetsIgnore.includes('.githooks/'), '.assetsignore must exclude .githooks/');
   assert.ok(assetsIgnore.includes('*.md'), '.assetsignore must exclude markdown documentation');
   assert.ok(assetsIgnore.includes('research/'), '.assetsignore must exclude research folder');
   assert.ok(assetsIgnore.includes('checks.cjs'), '.assetsignore must exclude test scripts');

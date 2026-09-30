@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+echo "==> [pre-push] Ejecutando validaciones del proyecto (checks.cjs)..."
+npm test
+
+echo "==> [pre-push] Verificando configuracion de Cloudflare (wrangler deploy --dry-run)..."
+npx wrangler deploy --dry-run
+
+echo "==> [pre-push] Todas las verificaciones pasaron exitosamente."

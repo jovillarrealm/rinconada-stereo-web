@@ -5,6 +5,7 @@
   "description": "Emisora online de San José de la Rinconada",
   "scripts": {
     "test": "node checks.cjs",
+    "check": "wrangler deploy --dry-run",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

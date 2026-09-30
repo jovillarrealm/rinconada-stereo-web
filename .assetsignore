@@ -5,6 +5,7 @@
 
 # Control de versiones y metadatos del repositorio
 .git/
+.githooks/
 .gitignore
 .gitattributes
 .assetsignore
