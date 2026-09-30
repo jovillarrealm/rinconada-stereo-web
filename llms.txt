@@ -11,7 +11,7 @@
 - [La ciénaga interactiva](https://rinconadastereo.com/#cienaga): Peces autóctonos de la región en Canvas 2D.
 - [Blogs de interés](https://rinconadastereo.com/#blogs): Memoria cultural, acordeón y crónicas regionales.
 - [Clima regional](https://rinconadastereo.com/#clima-regional): Pronóstico meteorológico de La Pacha vía Open-Meteo.
-- [Contacto](https://rinconadastereo.com/#contacto): Canales de atención comunitaria y redes sociales.
+- [Contacto](https://rinconadastereo.com/#contacto): Canales de atención y redes sociales.
 
 ## Redes sociales y contacto
 - [WhatsApp](https://wa.me/573052430933): Comunicación directa con cabina.

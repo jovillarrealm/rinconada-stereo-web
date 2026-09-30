@@ -157,17 +157,14 @@ function updateMuteIcons() {
   if (stickyMuteBtn) {
     stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
     stickyMuteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+    stickyMuteBtn.setAttribute('aria-pressed', String(isMuted));
   }
 
-  if (volumeSlider) {
-    const volPercent = Math.round(audio.volume * 100);
-    volumeSlider.setAttribute('aria-valuenow', isMuted ? 0 : volPercent);
-    volumeSlider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : `${volPercent} por ciento`);
-  }
-  if (stickyVolumeSlider) {
-    stickyVolumeSlider.value = isMuted ? 0 : audio.volume;
-    const volPercent = Math.round(audio.volume * 100);
-    stickyVolumeSlider.setAttribute('aria-valuenow', isMuted ? 0 : volPercent);
+  for (const slider of [volumeSlider, stickyVolumeSlider]) {
+    if (!slider) continue;
+    slider.value = isMuted ? 0 : audio.volume;
+    slider.setAttribute('aria-valuenow', slider.value);
+    slider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : `${Math.round(audio.volume * 100)} por ciento`);
   }
 }
 
@@ -244,6 +241,18 @@ if (audio && playBtn) {
     }
   }
 
+  function stopPlayback() {
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    isAutoRetrying = false;
+    wasPlayingBeforeOffline = false;
+    if (audio) {
+      audio.pause();
+    }
+  }
+
   function playLiveStream() {
     if (!audio) return Promise.reject(new Error('No audio element'));
     if (retryTimeout) {
@@ -282,15 +291,13 @@ if (audio && playBtn) {
       lastRetryTimestamp = 0;
       playLiveStream().catch((err) => {
         if (err && err.name === 'AbortError') return;
+        showFatalError();
       });
     } else {
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-        retryTimeout = null;
-        isAutoRetrying = false;
+      if (typeof cancelSleepTimer === 'function') {
+        cancelSleepTimer();
       }
-      wasPlayingBeforeOffline = false;
-      audio.pause();
+      stopPlayback();
     }
   });
 
@@ -301,30 +308,13 @@ if (audio && playBtn) {
     });
   }
 
-  // Control de volumen principal con guardado persistente y sincronización bidireccional
-  if (volumeSlider) {
-    volumeSlider.addEventListener('input', () => {
-      audio.volume = parseFloat(volumeSlider.value);
+  // Ambos controles usan el mismo estado y guardado.
+  audio.addEventListener('volumechange', updateMuteIcons);
+  for (const slider of [volumeSlider, stickyVolumeSlider]) {
+    if (!slider) continue;
+    slider.addEventListener('input', () => {
+      audio.volume = Number(slider.value);
       audio.muted = (audio.volume === 0);
-      if (stickyVolumeSlider) {
-        stickyVolumeSlider.value = audio.muted ? 0 : audio.volume;
-      }
-      try {
-        localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
-        localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
-      } catch (e) {}
-      updateMuteIcons();
-    });
-  }
-
-  // Control de volumen compacto en sticky player
-  if (stickyVolumeSlider) {
-    stickyVolumeSlider.addEventListener('input', () => {
-      audio.volume = parseFloat(stickyVolumeSlider.value);
-      audio.muted = (audio.volume === 0);
-      if (volumeSlider) {
-        volumeSlider.value = audio.volume;
-      }
       try {
         localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
         localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
@@ -356,57 +346,56 @@ if (audio && playBtn) {
     });
   }
 
+  function setStickyVisible(isVisible) {
+    if (!stickyPlayer) return;
+    if (isVisible) {
+      stickyPlayer.classList.add('is-visible');
+      stickyPlayer.removeAttribute('aria-hidden');
+      stickyPlayer.removeAttribute('inert');
+    } else {
+      stickyPlayer.classList.remove('is-visible');
+      stickyPlayer.setAttribute('aria-hidden', 'true');
+      stickyPlayer.setAttribute('inert', '');
+    }
+  }
+
   // Botón para volver al reproductor principal con desplazamiento suave
   const playerCardEl = document.querySelector('#reproductor');
   if (stickyTopBtn && playerCardEl) {
     stickyTopBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      const cardRect = playerCardEl.getBoundingClientRect();
-      const targetY = Math.max(0, window.pageYOffset + cardRect.top - 80);
-      window.scrollTo({ top: targetY, behavior: 'smooth' });
+      playerCardEl.scrollIntoView({ behavior: 'smooth' });
       if (playBtn) {
-        setTimeout(() => playBtn.focus(), 350);
+        playBtn.focus({ preventScroll: true });
       }
     });
   }
 
-  // IntersectionObserver y scroll listener para activar/desactivar el Sticky Bottom Player
+  // Visibilidad unificada del Sticky Bottom Player
   if (stickyPlayer && playerCardEl) {
-    const updateStickyVisibility = () => {
-      const rect = playerCardEl.getBoundingClientRect();
-      // El reproductor principal sale de vista en la zona superior cuando rect.top < -100
-      // o rect.bottom < 180, siempre que se haya hecho un scroll representativo (> 280px)
-      const isPastControls = (rect.top < -100);
-      const isPastCard = (rect.bottom < 200);
-      const isScrolledDown = window.scrollY > 280;
-
-      if ((isPastControls || isPastCard) && isScrolledDown) {
-        stickyPlayer.classList.add('is-visible');
-        stickyPlayer.removeAttribute('aria-hidden');
-      } else if (rect.top >= -60 || window.scrollY < 180) {
-        stickyPlayer.classList.remove('is-visible');
-        stickyPlayer.setAttribute('aria-hidden', 'true');
-      }
-    };
-
     if ('IntersectionObserver' in window) {
       const stickyObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           const rect = entry.boundingClientRect;
-          if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 250) {
-            stickyPlayer.classList.add('is-visible');
-            stickyPlayer.removeAttribute('aria-hidden');
-          } else if (entry.isIntersecting && rect.top > -60) {
-            stickyPlayer.classList.remove('is-visible');
-            stickyPlayer.setAttribute('aria-hidden', 'true');
+          if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 200) {
+            setStickyVisible(true);
+          } else if (entry.isIntersecting || rect.top >= -60) {
+            setStickyVisible(false);
           }
         });
       }, { threshold: 0.1 });
       stickyObserver.observe(playerCardEl);
+    } else {
+      const updateStickyFallback = () => {
+        const rect = playerCardEl.getBoundingClientRect();
+        const isPastControls = (rect.top < -100);
+        const isPastCard = (rect.bottom < 200);
+        const isScrolledDown = window.scrollY > 280;
+        setStickyVisible((isPastControls || isPastCard) && isScrolledDown);
+      };
+      window.addEventListener('scroll', updateStickyFallback, { passive: true });
+      window.addEventListener('resize', updateStickyFallback, { passive: true });
     }
-
-    window.addEventListener('scroll', updateStickyVisibility, { passive: true });
-    window.addEventListener('resize', updateStickyVisibility, { passive: true });
   }
 
   audio.addEventListener('play', () => {
@@ -517,6 +506,7 @@ if (audio && playBtn) {
       lastRetryTimestamp = 0;
       playLiveStream().catch((err) => {
         if (err && err.name === 'AbortError') return;
+        showFatalError();
       });
     } else if (status && audio && audio.paused) {
       status.textContent = 'Señal en pausa';
@@ -536,16 +526,16 @@ if (audio && playBtn) {
       }
       isAutoRetrying = false;
       lastRetryTimestamp = 0;
-      playLiveStream().catch(() => {});
+      playLiveStream().catch((err) => {
+        if (err && err.name === 'AbortError') return;
+        showFatalError();
+      });
     });
     navigator.mediaSession.setActionHandler('pause', () => {
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-        retryTimeout = null;
-        isAutoRetrying = false;
+      if (typeof cancelSleepTimer === 'function') {
+        cancelSleepTimer();
       }
-      wasPlayingBeforeOffline = false;
-      audio.pause();
+      stopPlayback();
     });
   }
 
@@ -629,7 +619,7 @@ function resetSleepTimerUI() {
   if (sleepTimerBtn) {
     sleepTimerBtn.classList.remove('is-active');
     sleepTimerBtn.setAttribute('title', 'Temporizador de apagado');
-    sleepTimerBtn.setAttribute('aria-label', 'Temporizador de apagado');
+    sleepTimerBtn.setAttribute('aria-label', 'Dormir — Temporizador de apagado');
   }
   if (sleepCancelBtn) sleepCancelBtn.disabled = true;
   sleepMenuItems.forEach(item => item.classList.remove('is-selected'));
@@ -681,7 +671,7 @@ function startSleepTimer(minutes) {
       clearInterval(sleepTimerId);
       sleepTimerId = null;
       isMidFade = false;
-      audio.pause();
+      stopPlayback();
       if (originalVolumeBeforeFade !== null) {
         audio.volume = originalVolumeBeforeFade;
         if (volumeSlider) volumeSlider.value = originalVolumeBeforeFade;
@@ -701,7 +691,7 @@ function startSleepTimer(minutes) {
     if (sleepTimerText) sleepTimerText.textContent = label;
     if (sleepTimerBtn) {
       sleepTimerBtn.setAttribute('title', `Apagado programado en ${label}`);
-      sleepTimerBtn.setAttribute('aria-label', `Apagado programado en ${label}`);
+      sleepTimerBtn.setAttribute('aria-label', `Dormir — ${label} restantes para apagar la transmisión`);
     }
 
     // Desvanecimiento suave en los últimos 30 segundos
@@ -772,7 +762,10 @@ let recentTracks = [];
 try {
   const stored = sessionStorage.getItem('rinconada_recent_tracks');
   if (stored) {
-    recentTracks = JSON.parse(stored);
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      recentTracks = parsed.filter(item => item && typeof item.title === 'string' && typeof item.time === 'string').slice(0, 5);
+    }
   }
 } catch (e) {}
 
@@ -784,12 +777,19 @@ function renderRecentTracks() {
     return;
   }
   if (recentBadge) recentBadge.textContent = recentTracks.length;
-  recentTracksList.innerHTML = recentTracks.map(item => `
-    <li class="recent-track-item">
-      <span class="recent-track-name" title="${item.title}">${item.title}</span>
-      <span class="recent-track-time">${item.time}</span>
-    </li>
-  `).join('');
+  recentTracksList.replaceChildren(...recentTracks.map(item => {
+    const row = document.createElement('li');
+    row.className = 'recent-track-item';
+    const name = document.createElement('span');
+    name.className = 'recent-track-name';
+    name.title = item.title;
+    name.textContent = item.title;
+    const time = document.createElement('span');
+    time.className = 'recent-track-time';
+    time.textContent = item.time;
+    row.append(name, time);
+    return row;
+  }));
 }
 
 function addRecentTrack(title) {
@@ -830,7 +830,7 @@ let currentTrackTitle = '';
 let metaPollInterval = null;
 
 function updateNowPlaying(rawTitle) {
-  if (!rawTitle) return;
+  if (typeof rawTitle !== 'string') return;
   const cleaned = rawTitle.trim();
   if (!cleaned) return;
 
@@ -887,13 +887,13 @@ function updateNowPlaying(rawTitle) {
 function fetchLiveTrack() {
   const cbName = 'rs_meta_cb_' + Math.floor(Math.random() * 1000000);
   const script = document.createElement('script');
-  
-  const timer = setTimeout(() => {
-    cleanup();
-  }, 6000);
+  let timer = null;
 
   function cleanup() {
-    clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
     if (window[cbName]) {
       try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
     }
@@ -901,6 +901,10 @@ function fetchLiveTrack() {
       script.parentNode.removeChild(script);
     }
   }
+
+  timer = setTimeout(() => {
+    cleanup();
+  }, 6000);
 
   window[cbName] = function(data) {
     cleanup();
@@ -1048,28 +1052,42 @@ function getWeatherInterpretation(code) {
 
 async function loadOpenMeteoWeather() {
   if (!weatherCard) return;
+  const lat = 9.2579;
+  const lon = -74.2599;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=America%2FBogota`;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
   try {
-    const lat = 9.2579;
-    const lon = -74.2599;
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=America%2FBogota`;
-    const res = await fetch(url);
+    const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
     if (!res.ok) throw new Error('Respuesta no exitosa de la API');
     const data = await res.json();
-    const current = data.current;
+    const current = data && data.current;
+    if (
+      !current ||
+      typeof current.temperature_2m !== 'number' || !Number.isFinite(current.temperature_2m) ||
+      typeof current.relative_humidity_2m !== 'number' || !Number.isFinite(current.relative_humidity_2m) ||
+      typeof current.weather_code !== 'number' || !Number.isFinite(current.weather_code) ||
+      typeof current.wind_speed_10m !== 'number' || !Number.isFinite(current.wind_speed_10m)
+    ) {
+      throw new Error('Datos incompletos o inválidos de Open-Meteo');
+    }
     const info = getWeatherInterpretation(current.weather_code);
+    const temp = Math.round(current.temperature_2m);
+    const humidity = Math.round(current.relative_humidity_2m);
+    const wind = Math.round(current.wind_speed_10m);
 
     weatherCard.innerHTML = `
       <div class="weather-main">
         <div class="weather-temp-group">
-          <div class="weather-temp">${Math.round(current.temperature_2m)}°C</div>
+          <div class="weather-temp">${temp}°C</div>
           <div class="weather-location-highlight">La Pacha, <span>Magdalena</span></div>
           <div class="weather-desc">${info.desc}</div>
         </div>
         <div class="weather-icon-box" aria-hidden="true">${info.icon}</div>
       </div>
       <div class="weather-sub">
-        <span>💧 Humedad: <strong>${current.relative_humidity_2m}%</strong></span>
-        <span>💨 Viento: <strong>${Math.round(current.wind_speed_10m)} km/h</strong></span>
+        <span>💧 Humedad: <strong>${humidity}%</strong></span>
+        <span>💨 Viento: <strong>${wind} km/h</strong></span>
       </div>
     `;
   } catch (err) {
@@ -1078,6 +1096,8 @@ async function loadOpenMeteoWeather() {
         <p>Pronóstico no disponible temporalmente.</p>
       </div>
     `;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -1246,14 +1266,14 @@ if (weatherSection && 'IntersectionObserver' in window) {
     ripples.push({ x: x, y: y, radius: 4, alpha: 0.6 });
   }
 
-  function update() {
+  function update(dt = 1) {
     const pad = 35;
 
     // Actualizar migajas de alimento
     for (let i = foodCrumbs.length - 1; i >= 0; i--) {
       const c = foodCrumbs[i];
-      c.y += c.vy;
-      c.life -= 0.003;
+      c.y += c.vy * dt;
+      c.life -= 0.003 * dt;
       if (c.life <= 0 || c.y > height - 10) {
         foodCrumbs.splice(i, 1);
       }
@@ -1261,7 +1281,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
 
     // Actualizar peces
     for (const f of fishList) {
-      f.wagPhase += f.wagSpeed;
+      f.wagPhase += f.wagSpeed * dt;
 
       // 1. Si hay comida en el agua, los peces van directamente hacia la migaja más cercana
       let targetCrumb = null;
@@ -1281,8 +1301,8 @@ if (weatherSection && 'IntersectionObserver' in window) {
         const dist = targetCrumb.dist;
 
         if (dist > 10) {
-          f.vx += (dx / dist) * 0.35;
-          f.vy += (dy / dist) * 0.35;
+          f.vx += (dx / dist) * 0.35 * dt;
+          f.vy += (dy / dist) * 0.35 * dt;
           f.wagSpeed = 0.22; // Nado emocionado hacia el alimento
         } else {
           // El pez se come la migaja
@@ -1301,13 +1321,13 @@ if (weatherSection && 'IntersectionObserver' in window) {
         if (dist > 28 && dist < 240) {
           // Atracción suave hacia la mano / cursor
           const pull = 0.22;
-          f.vx += (dx / dist) * pull;
-          f.vy += (dy / dist) * pull;
+          f.vx += (dx / dist) * pull * dt;
+          f.vy += (dy / dist) * pull * dt;
           f.wagSpeed = 0.17;
         } else if (dist <= 28) {
           // Dan vueltas alrededor del cursor esperando alimento
-          f.vx += (-dy / (dist || 1)) * 0.4;
-          f.vy += (dx / (dist || 1)) * 0.4;
+          f.vx += (-dy / (dist || 1)) * 0.4 * dt;
+          f.vy += (dx / (dist || 1)) * 0.4 * dt;
           f.wagSpeed = 0.14;
         }
       } else {
@@ -1318,35 +1338,36 @@ if (weatherSection && 'IntersectionObserver' in window) {
       const curSpeed = Math.hypot(f.vx, f.vy);
       const maxSpeed = (foodCrumbs.length > 0 || pointer.active) ? f.speed * 2.3 : f.speed * 1.5;
       if (curSpeed > maxSpeed) {
-        f.vx *= 0.94;
-        f.vy *= 0.94;
+        const damp = Math.pow(0.94, dt);
+        f.vx *= damp;
+        f.vy *= damp;
       } else if (curSpeed < 0.5) {
-        f.vx += (Math.random() - 0.5) * 0.2;
-        f.vy += (Math.random() - 0.5) * 0.1;
+        f.vx += (Math.random() - 0.5) * 0.2 * dt;
+        f.vy += (Math.random() - 0.5) * 0.1 * dt;
       }
 
-      f.x += f.vx;
-      f.y += f.vy;
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
 
       // Mantener dentro de los bordes con giro suave
-      if (f.x < pad) f.vx += 0.1;
-      else if (f.x > width - pad) f.vx -= 0.1;
-      if (f.y < 18) f.vy += 0.08;
-      else if (f.y > height - 18) f.vy -= 0.08;
+      if (f.x < pad) f.vx += 0.1 * dt;
+      else if (f.x > width - pad) f.vx -= 0.1 * dt;
+      if (f.y < 18) f.vy += 0.08 * dt;
+      else if (f.y > height - 18) f.vy -= 0.08 * dt;
 
       // Orientación del pez hacia el movimiento
       const moveAngle = Math.atan2(f.vy, f.vx);
       let diff = moveAngle - f.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
-      f.angle += diff * 0.09;
+      f.angle += diff * (1 - Math.pow(1 - 0.09, dt));
     }
 
     // Actualizar ondas
     for (let i = ripples.length - 1; i >= 0; i--) {
       const r = ripples[i];
-      r.radius += 1.4;
-      r.alpha -= 0.02;
+      r.radius += 1.4 * dt;
+      r.alpha -= 0.02 * dt;
       if (r.alpha <= 0) ripples.splice(i, 1);
     }
   }
@@ -1484,9 +1505,14 @@ if (weatherSection && 'IntersectionObserver' in window) {
     }
   }
 
-  function loop() {
+  let lastFrameTime = 0;
+  let isPondInView = false;
+
+  function loop(now = (typeof performance !== 'undefined' ? performance.now() : Date.now())) {
     if (!isRunning) return;
-    update();
+    const dt = lastFrameTime ? Math.min((now - lastFrameTime) / 16.667, 2.5) : 1;
+    lastFrameTime = now;
+    update(dt);
     render();
     animationId = requestAnimationFrame(loop);
   }
@@ -1494,7 +1520,8 @@ if (weatherSection && 'IntersectionObserver' in window) {
   function start() {
     if (isRunning) return;
     isRunning = true;
-    loop();
+    lastFrameTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    animationId = requestAnimationFrame(loop);
   }
 
   function stop() {
@@ -1503,6 +1530,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
       cancelAnimationFrame(animationId);
       animationId = null;
     }
+    lastFrameTime = 0;
   }
 
   // Interacción: Mover cursor (atraer peces)
@@ -1522,6 +1550,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     pointer.y = py;
     pointer.active = true;
     dropFood(px, py);
+    if (reducedMotion) render();
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -1548,6 +1577,14 @@ if (weatherSection && 'IntersectionObserver' in window) {
     if (reducedMotion) render();
   });
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stop();
+    } else if (isPondInView && !reducedMotion) {
+      start();
+    }
+  });
+
   let initialized = false;
   function ensurePondReady() {
     if (initialized) return;
@@ -1559,24 +1596,19 @@ if (weatherSection && 'IntersectionObserver' in window) {
 
   if ('IntersectionObserver' in window) {
     const pondObserver = new IntersectionObserver((entries) => {
-      if (entries.some(e => e.isIntersecting)) {
+      isPondInView = entries.some(e => e.isIntersecting);
+      if (isPondInView) {
         ensurePondReady();
-        if (!reducedMotion) start();
+        if (!reducedMotion && !document.hidden) start();
       } else {
         stop();
       }
     }, { rootMargin: '150px', threshold: 0.02 });
     pondObserver.observe(canvas);
   } else {
+    isPondInView = true;
     ensurePondReady();
-    if (!reducedMotion) start();
-  }
-
-  // En caso de que el navegador quede inactivo, pre-inicializar en segundo plano sin bloquear
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(() => {
-      ensurePondReady();
-    }, { timeout: 5000 });
+    if (!reducedMotion && !document.hidden) start();
   }
 })();
 

@@ -19,7 +19,7 @@
       })();
     </script>
     <title>Rinconada Stereo — Emisora en vivo · Un encuentro con tu región</title>
-    <meta name="description" content="Escucha la señal en vivo de Rinconada Stereo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Radio comunitaria, música de acordeón y noticias de nuestra tierra.">
+    <meta name="description" content="Escucha la señal en vivo de Rinconada Stereo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Radio en línea, música de acordeón y noticias de nuestra tierra.">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://rinconadastereo.com/">
 
@@ -39,7 +39,7 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Rinconada Stereo">
     <meta property="og:title" content="Rinconada Stereo — Un encuentro con tu región">
-    <meta property="og:description" content="Señal en vivo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Acordeón, memoria y cultura comunitaria.">
+    <meta property="og:description" content="Señal en vivo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Radio en línea, música de acordeón, memoria y cultura regional.">
     <meta property="og:url" content="https://rinconadastereo.com/">
     <!-- Primary og:image en JPEG para máxima compatibilidad con WhatsApp, Telegram y Facebook -->
     <meta property="og:image" content="https://rinconadastereo.com/assets/og-cover.jpg">
@@ -269,7 +269,7 @@
                 </div>
                 <!-- ACCIONES DE TEMA: PEDIR POR WHATSAPP Y RECIBIR RECIENTES -->
                 <div class="track-actions-bar">
-                  <a class="track-share-wa-btn" id="track-share-wa" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer" title="Dedicar o pedir esta canción por WhatsApp" aria-label="Dedicar o pedir esta canción por WhatsApp">
+                  <a class="track-share-wa-btn" id="track-share-wa" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer" title="Dedicar o pedir esta canción por WhatsApp" aria-label="Dedicar en cabina por WhatsApp">
                     <span class="track-wa-icon" aria-hidden="true">💬</span>
                     <span class="track-wa-label">Dedicar en cabina</span>
                     <span class="sr-only">(se abre en una pestaña nueva)</span>
@@ -309,12 +309,12 @@
                     </svg>
                   </button>
                   <label for="volume-slider" class="sr-only">Control de volumen</label>
-                  <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="90">
+                  <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen" aria-valuetext="90 por ciento">
                 </div>
 
                 <!-- TEMPORIZADOR DE APAGADO (SLEEP TIMER) -->
                 <div class="sleep-timer-wrap">
-                  <button class="sleep-timer-btn" id="sleep-timer-btn" type="button" aria-label="Temporizador de apagado" title="Temporizador de apagado" aria-expanded="false" aria-haspopup="true">
+                  <button class="sleep-timer-btn" id="sleep-timer-btn" type="button" aria-label="Dormir — Temporizador de apagado" title="Temporizador de apagado" aria-expanded="false" aria-haspopup="true">
                     <span class="sleep-timer-icon" aria-hidden="true">⏱</span>
                     <span class="sleep-timer-text" id="sleep-timer-text">Dormir</span>
                   </button>
@@ -486,7 +486,7 @@
               </picture>
             </a>
             <p class="footer-mission">
-              <strong>Rinconada Stereo</strong> · Radio comunitaria desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia.
+              <strong>Rinconada Stereo</strong> · Radio en línea desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia.
             </p>
             <p class="footer-subtext">Un encuentro con tu región, preservando nuestras raíces, música y memoria ribereña a orillas de la Ciénaga La Rinconada.</p>
           </div>
@@ -507,7 +507,7 @@
           <div class="footer-col footer-col-quick">
             <h3 class="footer-col-title">Sintonía Directa</h3>
             <div class="footer-quick-links">
-              <a class="footer-listen-anchor" href="#reproductor" aria-label="Ir al reproductor de la señal en vivo">
+              <a class="footer-listen-anchor" href="#reproductor" aria-label="EN VIVO — Escuchar la señal">
                 <span class="footer-live-badge" aria-hidden="true">
                   <span class="footer-live-dot"></span> EN VIVO
                 </span>
@@ -526,9 +526,9 @@
 
         <div class="footer-bottom-bar">
           <p class="footer-copy">
-            © 2026 Rinconada Stereo · Radio comunitaria desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia. Todos los derechos reservados.
+            © 2026 Rinconada Stereo · Radio en línea desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia. Todos los derechos reservados.
           </p>
-          <a class="footer-top-anchor" href="#inicio" aria-label="Volver arriba al inicio de la página">
+          <a class="footer-top-anchor" href="#inicio" aria-label="Inicio de página — Volver arriba">
             <span>Inicio de página</span>
             <span aria-hidden="true">↑</span>
           </a>
@@ -537,7 +537,7 @@
     </footer>
 
     <!-- MINI-REPRODUCTOR FLOTANTE PERSISTENTE (STICKY BOTTOM PLAYER COMPACTO) -->
-    <aside class="sticky-player" id="sticky-player" role="region" aria-label="Reproductor flotante" aria-hidden="true">
+    <aside class="sticky-player" id="sticky-player" role="region" aria-label="Reproductor flotante" aria-hidden="true" inert>
       <div class="sticky-player-inner">
         <div class="sticky-player-left">
           <button class="sticky-play-btn" id="sticky-play-btn" type="button" aria-label="Reproducir señal en vivo" title="Reproducir señal en vivo">

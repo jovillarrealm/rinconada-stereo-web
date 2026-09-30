@@ -19,14 +19,18 @@ Abrir `index.html` directamente o servir esta carpeta con cualquier servidor HTT
 - Probar la señal directa en navegadores y teléfonos reales. El navegador integrado usado durante la maqueta se cerró al intentar reproducirla; el reproductor original se conserva como alternativa.
 - Confirmar programación y datos de contacto vigentes. Hasta entonces se muestra “En actualización”.
 - Conseguir el logo maestro o vector para mejorar su nitidez. El PNG adjunto se muestra a tamaño contenido.
-- El widget del clima se muestra discretamente dentro de Programación y usa un pronóstico regional de San Sebastián de Buenavista; no corresponde a una estación meteorológica ubicada en la ciénaga.
+- El componente nativo del clima consulta la API pública de Open-Meteo para La Pacha y San Sebastián de Buenavista con validación numérica y tiempo límite; no corresponde a una estación meteorológica física ubicada en la ciénaga.
 
 Investigación y fuentes: `research/stack-rinconada.md`, `research/diseno-rinconada.md`, `research/clima-rinconada.md`.
+
+## Comprobar cambios
+
+Con Node.js instalado, ejecutar `node checks.cjs`. No necesita npm, dependencias ni conexión; comprueba historial seguro, sincronización de volumen, enrutamiento de errores de reproducción, estado `inert` del mini-reproductor y caché/offline con simulaciones del DOM y del service worker. La reproducción real, el chat y la experiencia móvil necesitan pruebas en navegador.
+
+Revisión del código y mejoras implementadas: [REVIEW.md](REVIEW.md).
 
 ## Documentos del proyecto
 
 - [Especificación](SPEC.md): alcance y criterios de aceptación.
 - [Plan](PLAN.md): hitos, pruebas, publicación en GitHub Pages y reversión del dominio.
-
 - [Guía de estilo](STYLE_GUIDE.md): identidad visual y configuración visual del Cbox nuevo.
-

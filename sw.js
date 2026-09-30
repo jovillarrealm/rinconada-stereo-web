@@ -1,5 +1,6 @@
-// Service Worker — Rinconada Stereo (Carga instantánea 0 ms y modo sin conexión)
-const CACHE_NAME = 'rinconada-stereo-v4';
+// Service Worker — Rinconada Stereo (recursos locales y modo sin conexión)
+const CACHE_PREFIX = `rinconada-stereo:${self.registration.scope}:`;
+const CACHE_NAME = `${CACHE_PREFIX}v5`;
 
 // Recursos estáticos esenciales para el cascarón de la aplicación (App Shell)
 const PRECACHE_ASSETS = [
@@ -10,23 +11,15 @@ const PRECACHE_ASSETS = [
   'manifest.webmanifest',
   'favicon.ico',
   'assets/favicon.svg',
-  'assets/favicon-512x512.png',
   'assets/logo-rinconada.avif',
-  'assets/logo-rinconada.webp',
-  'assets/logo-rinconada.png',
-  'assets/locupez.avif',
-  'assets/locupez.webp',
-  'assets/locupez.png'
+  'assets/locupez.avif'
 ];
 
 // Instalación: Precargar recursos del shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        // Tolerancia si algún recurso individual falla en precargar
-        console.warn('Precarga parcial en Service Worker:', err);
-      });
+      return cache.addAll(PRECACHE_ASSETS);
     }).then(() => self.skipWaiting())
   );
 });
@@ -37,7 +30,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) {
             return caches.delete(key);
           }
         })
@@ -63,21 +56,29 @@ self.addEventListener('fetch', (event) => {
     return; // Petición directa a la red sin intervenir
   }
 
+  async function cacheResponse(response) {
+    if (response.status === 200) {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(req, response.clone());
+      } catch (err) {
+        // Un fallo de almacenamiento no debe impedir entregar la respuesta de red.
+      }
+    }
+    return response;
+  }
+
   // 2. Estrategia para navegación HTML: Network-First con respaldo en caché
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
-        .then((res) => {
-          if (res.status === 200) {
-            const resClone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-          }
-          return res;
-        })
+        .then(cacheResponse)
         .catch(async () => {
-          const cached = await caches.match(req);
+          const cache = await caches.open(CACHE_NAME);
+          const cached = await cache.match(req);
           if (cached) return cached;
-          return caches.match('index.html') || caches.match('./');
+          return await cache.match(new URL('index.html', self.registration.scope).href) ||
+            await cache.match(self.registration.scope) || Response.error();
         })
     );
     return;
@@ -85,20 +86,15 @@ self.addEventListener('fetch', (event) => {
 
   // 3. Estrategia para recursos locales (CSS, JS, imágenes estáticas): Stale-While-Revalidate
   if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(req).then((cachedResponse) => {
-        const fetchPromise = fetch(req)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const resClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-            }
-            return networkResponse;
-          })
-          .catch(() => cachedResponse);
-
-        return cachedResponse || fetchPromise;
-      })
-    );
+    const responsePromise = caches.open(CACHE_NAME).then(async (cache) => {
+      const cachedResponse = await cache.match(req);
+      const fetchPromise = fetch(req)
+        .then(cacheResponse)
+        .catch(() => cachedResponse || Response.error());
+      event.waitUntil(fetchPromise);
+      return cachedResponse || fetchPromise;
+    });
+    event.respondWith(responsePromise);
+    event.waitUntil(responsePromise);
   }
 });
