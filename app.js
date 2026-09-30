@@ -352,50 +352,65 @@ if (audio && playBtn) {
       stickyPlayer.classList.add('is-visible');
       stickyPlayer.removeAttribute('aria-hidden');
       stickyPlayer.removeAttribute('inert');
+      try { stickyPlayer.inert = false; } catch (e) {}
     } else {
       stickyPlayer.classList.remove('is-visible');
       stickyPlayer.setAttribute('aria-hidden', 'true');
       stickyPlayer.setAttribute('inert', '');
+      try { stickyPlayer.inert = true; } catch (e) {}
     }
   }
 
-  // Botón para volver al reproductor principal con desplazamiento suave
+  // Botón para volver al reproductor principal con desplazamiento suave y enfoque
   const playerCardEl = document.querySelector('#reproductor');
   if (stickyTopBtn && playerCardEl) {
     stickyTopBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      playerCardEl.scrollIntoView({ behavior: 'smooth' });
+      const cardRect = playerCardEl.getBoundingClientRect();
+      const targetY = Math.max(0, window.pageYOffset + cardRect.top - 80);
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
       if (playBtn) {
-        playBtn.focus({ preventScroll: true });
+        setTimeout(() => playBtn.focus(), 350);
       }
     });
   }
 
-  // Visibilidad unificada del Sticky Bottom Player
+  // IntersectionObserver y listeners de scroll y resize para activar/desactivar el Sticky Bottom Player
   if (stickyPlayer && playerCardEl) {
+    const updateStickyVisibility = () => {
+      if (typeof playerCardEl.getBoundingClientRect !== 'function') return;
+      const rect = playerCardEl.getBoundingClientRect();
+      // El reproductor principal sale de vista en la zona superior cuando rect.top < -100
+      // o rect.bottom < 200, siempre que se haya hecho un scroll representativo (> 240px)
+      const isPastControls = (rect.top < -100);
+      const isPastCard = (rect.bottom < 200);
+      const isScrolledDown = window.scrollY > 240;
+
+      if ((isPastControls || isPastCard) && isScrolledDown) {
+        setStickyVisible(true);
+      } else if (rect.top >= -60 || window.scrollY < 180) {
+        setStickyVisible(false);
+      }
+    };
+
     if ('IntersectionObserver' in window) {
       const stickyObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           const rect = entry.boundingClientRect;
-          if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 200) {
+          if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 240) {
             setStickyVisible(true);
-          } else if (entry.isIntersecting || rect.top >= -60) {
+          } else if (entry.isIntersecting && rect.top > -60) {
             setStickyVisible(false);
           }
         });
       }, { threshold: 0.1 });
       stickyObserver.observe(playerCardEl);
-    } else {
-      const updateStickyFallback = () => {
-        const rect = playerCardEl.getBoundingClientRect();
-        const isPastControls = (rect.top < -100);
-        const isPastCard = (rect.bottom < 200);
-        const isScrolledDown = window.scrollY > 280;
-        setStickyVisible((isPastControls || isPastCard) && isScrolledDown);
-      };
-      window.addEventListener('scroll', updateStickyFallback, { passive: true });
-      window.addEventListener('resize', updateStickyFallback, { passive: true });
     }
+
+    window.addEventListener('scroll', updateStickyVisibility, { passive: true });
+    window.addEventListener('resize', updateStickyVisibility, { passive: true });
+
+    updateStickyVisibility();
   }
 
   audio.addEventListener('play', () => {
