@@ -1,34 +1,102 @@
-// --- GESTIÓN DE TEMA (MODO OSCURO / CLARO CON PERSISTENCIA) ---
-function initTheme() {
+// ==========================================================================
+// RINCONADA STEREO — WEB APP
+// Emisora comunitaria en línea desde La Pacha, Magdalena, Colombia
+// Arquitectura modular sin dependencias (Vanilla JS, 0 runtime overhead)
+// Optimizado para conexiones móviles lentas (2G/3G), bajo consumo y resiliencia
+// ==========================================================================
+
+// --- 1. MÓDULO DE ALMACENAMIENTO SEGURO (StorageAdapter) ---
+const StorageAdapter = {
+  local: {
+    get(key, fallback = null) {
+      try {
+        const val = localStorage.getItem(key);
+        return val !== null ? val : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    set(key, val) {
+      try {
+        localStorage.setItem(key, String(val));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    remove(key) {
+      try {
+        localStorage.removeItem(key);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+  },
+  session: {
+    get(key, fallback = null) {
+      try {
+        const val = sessionStorage.getItem(key);
+        return val !== null ? val : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    set(key, val) {
+      try {
+        sessionStorage.setItem(key, String(val));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    remove(key) {
+      try {
+        sessionStorage.removeItem(key);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+  }
+};
+
+// --- 2. MÓDULO DE CONECTIVIDAD Y MODO AHORRO (NetworkMonitor) ---
+const NetworkMonitor = {
+  isSaveDataEnabled() {
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    return !!(conn && (conn.saveData || conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g'));
+  },
+  isOnline() {
+    return typeof navigator.onLine === 'boolean' ? navigator.onLine : true;
+  }
+};
+
+// --- 3. MÓDULO DE GESTIÓN DE TEMA (ThemeManager) ---
+const ThemeManager = (function() {
+  const STORAGE_KEY = 'rinconada_theme';
   const toggleBtn = document.querySelector('#theme-toggle');
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
   const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-  const STORAGE_KEY = 'rinconada_theme';
+  const subscribers = [];
+  let currentTheme = 'light';
 
   function getSystemTheme() {
     return mediaQuery && mediaQuery.matches ? 'dark' : 'light';
   }
 
-  function getSavedTheme() {
-    try {
-      return localStorage.getItem(STORAGE_KEY);
-    } catch (e) {
-      return null;
-    }
+  function detectInitialTheme() {
+    return document.documentElement.getAttribute('data-theme') ||
+      StorageAdapter.local.get(STORAGE_KEY) ||
+      getSystemTheme();
   }
 
-  function getCurrentTheme() {
-    return document.documentElement.getAttribute('data-theme') || getSavedTheme() || getSystemTheme();
-  }
-
-  function applyTheme(theme, isUserAction = false) {
+  function apply(theme, isUserAction = false) {
+    currentTheme = theme;
     document.documentElement.setAttribute('data-theme', theme);
+
     if (isUserAction) {
-      try {
-        localStorage.setItem(STORAGE_KEY, theme);
-      } catch (e) {
-        // localStorage no disponible o modo incógnito restrictivo
-      }
+      StorageAdapter.local.set(STORAGE_KEY, theme);
     }
 
     if (metaThemeColor) {
@@ -49,43 +117,52 @@ function initTheme() {
         moonIcon.style.display = isDark ? 'none' : 'inline-flex';
       }
     }
-  }
 
-  // Inicializar estado del botón según el tema activo actual
-  applyTheme(getCurrentTheme(), false);
-
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const current = getCurrentTheme();
-      const nextTheme = current === 'dark' ? 'light' : 'dark';
-      applyTheme(nextTheme, true);
-    });
-  }
-
-  // Escuchar cambios de preferencia del sistema si el usuario no ha forzado un tema manual
-  if (mediaQuery) {
-    const handleSystemThemeChange = (e) => {
-      const saved = getSavedTheme();
-      if (!saved) {
-        applyTheme(e.matches ? 'dark' : 'light', false);
-      }
-    };
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleSystemThemeChange);
-    } else if (mediaQuery.addListener) {
-      mediaQuery.addListener(handleSystemThemeChange);
+    for (let i = 0; i < subscribers.length; i++) {
+      try { subscribers[i](theme); } catch (e) {}
     }
   }
-}
 
-// Inicialización inmediata o al cargar el DOM
+  function init() {
+    apply(detectInitialTheme(), false);
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        apply(currentTheme === 'dark' ? 'light' : 'dark', true);
+      });
+    }
+
+    if (mediaQuery) {
+      const onSystemChange = (e) => {
+        if (!StorageAdapter.local.get(STORAGE_KEY)) {
+          apply(e.matches ? 'dark' : 'light', false);
+        }
+      };
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', onSystemChange);
+      } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(onSystemChange);
+      }
+    }
+  }
+
+  return {
+    init,
+    apply,
+    get: () => currentTheme,
+    isDark: () => currentTheme === 'dark',
+    subscribe: (fn) => subscribers.push(fn)
+  };
+})();
+
+// Inicialización de tema inmediata o en DOMContentLoaded
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTheme);
+  document.addEventListener('DOMContentLoaded', ThemeManager.init);
 } else {
-  initTheme();
+  ThemeManager.init();
 }
 
-// --- REPRODUCTOR CUSTOMIZADO Y SINCRONIZACIÓN ---
+// --- 4. MÓDULO DEL REPRODUCTOR DE AUDIO (AudioController) ---
 const audio = document.querySelector('#radio');
 const status = document.querySelector('#audio-status');
 const playBtn = document.querySelector('#play-btn');
@@ -97,7 +174,7 @@ const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
 const volumeSlider = document.querySelector('#volume-slider');
 const eqBars = document.querySelector('#eq-bars');
 
-// Elementos del Mini-reproductor Flotante Persistente (Sticky Bottom Player)
+// Mini-reproductor flotante (Sticky Bottom Player)
 const stickyPlayer = document.querySelector('#sticky-player');
 const stickyPlayBtn = document.querySelector('#sticky-play-btn');
 const stickyIconPlay = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-play') : null;
@@ -111,8 +188,8 @@ const stickyStatusTag = document.querySelector('#sticky-status-tag');
 const stickyStatusLabel = document.querySelector('#sticky-status-label');
 const stickyWaBtn = document.querySelector('#sticky-wa-btn');
 const stickyTopBtn = document.querySelector('#sticky-top-btn');
+const playerCardEl = document.querySelector('#reproductor');
 
-// Claves de persistencia de volumen y silencio en localStorage
 const VOL_STORAGE_KEY = 'rinconada_volume';
 const MUTE_STORAGE_KEY = 'rinconada_muted';
 
@@ -130,13 +207,8 @@ function updateMuteIcons() {
 
   // Iconos reproductor principal
   if (iconVolOn && iconVolMute) {
-    if (isMuted) {
-      iconVolOn.style.display = 'none';
-      iconVolMute.style.display = 'block';
-    } else {
-      iconVolOn.style.display = 'block';
-      iconVolMute.style.display = 'none';
-    }
+    iconVolOn.style.display = isMuted ? 'none' : 'block';
+    iconVolMute.style.display = isMuted ? 'block' : 'none';
   }
   if (muteBtn) {
     muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
@@ -146,13 +218,8 @@ function updateMuteIcons() {
 
   // Iconos sticky player
   if (stickyIconVolOn && stickyIconVolMute) {
-    if (isMuted) {
-      stickyIconVolOn.style.display = 'none';
-      stickyIconVolMute.style.display = 'block';
-    } else {
-      stickyIconVolOn.style.display = 'block';
-      stickyIconVolMute.style.display = 'none';
-    }
+    stickyIconVolOn.style.display = isMuted ? 'none' : 'block';
+    stickyIconVolMute.style.display = isMuted ? 'block' : 'none';
   }
   if (stickyMuteBtn) {
     stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
@@ -187,100 +254,113 @@ function updatePlayPauseIcons(isPlaying) {
   }
 }
 
+function setStickyVisible(isVisible) {
+  if (!stickyPlayer) return;
+  if (isVisible) {
+    stickyPlayer.classList.add('is-visible');
+    stickyPlayer.removeAttribute('aria-hidden');
+    stickyPlayer.removeAttribute('inert');
+    try { stickyPlayer.inert = false; } catch (e) {}
+  } else {
+    stickyPlayer.classList.remove('is-visible');
+    stickyPlayer.setAttribute('aria-hidden', 'true');
+    stickyPlayer.setAttribute('inert', '');
+    try { stickyPlayer.inert = true; } catch (e) {}
+  }
+}
+
+// Variables de estado del streaming
+let wasPlayingBeforeOffline = false;
+let retryTimeout = null;
+let isAutoRetrying = false;
+let retryAttempt = 0;
+const MAX_AUTO_RETRIES = 3;
+
+const rawStreamSrc = (audio && (audio.getAttribute('src') || audio.src)) || 'https://play14.tikast.com:22012/stream';
+const baseStreamUrl = rawStreamSrc.split('?')[0];
+
+function getFreshStreamUrl() {
+  return `${baseStreamUrl}?t=${Date.now()}`;
+}
+
+function showFatalError() {
+  if (retryTimeout) {
+    clearTimeout(retryTimeout);
+    retryTimeout = null;
+  }
+  isAutoRetrying = false;
+  retryAttempt = 0;
+  updatePlayPauseIcons(false);
+  updateStickyStatus('error', 'Error al conectar');
+  if (status) {
+    status.textContent = 'Error al conectar';
+    status.className = 'stream-status-tag is-error';
+  }
+}
+
+function stopPlayback() {
+  if (retryTimeout) {
+    clearTimeout(retryTimeout);
+    retryTimeout = null;
+  }
+  isAutoRetrying = false;
+  retryAttempt = 0;
+  wasPlayingBeforeOffline = false;
+  if (audio) {
+    audio.pause();
+  }
+}
+
+function playLiveStream() {
+  if (!audio) return Promise.reject(new Error('No audio element'));
+  if (retryTimeout) {
+    clearTimeout(retryTimeout);
+    retryTimeout = null;
+  }
+  const currentVol = audio.volume;
+  const currentMuted = audio.muted;
+  audio.src = getFreshStreamUrl();
+  audio.load();
+  audio.volume = currentVol;
+  audio.muted = currentMuted;
+  if (status) {
+    status.textContent = 'Conectando con la señal…';
+    status.className = 'stream-status-tag is-connecting';
+  }
+  return audio.play();
+}
+
+// Inicialización de volumen y listeners de audio
 if (audio && playBtn) {
-  // Inicializar volumen y silencio con memoria persistente de localStorage
   if (volumeSlider) {
-    try {
-      const savedVol = localStorage.getItem(VOL_STORAGE_KEY);
-      const savedMute = localStorage.getItem(MUTE_STORAGE_KEY);
-      if (savedVol !== null) {
-        const parsed = parseFloat(savedVol);
-        if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
-          audio.volume = parsed;
-          volumeSlider.value = parsed;
-        } else {
-          audio.volume = parseFloat(volumeSlider.value);
-        }
+    const savedVol = StorageAdapter.local.get(VOL_STORAGE_KEY);
+    const savedMute = StorageAdapter.local.get(MUTE_STORAGE_KEY);
+    if (savedVol !== null) {
+      const parsed = parseFloat(savedVol);
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+        audio.volume = parsed;
+        volumeSlider.value = parsed;
       } else {
         audio.volume = parseFloat(volumeSlider.value);
       }
-      if (savedMute === 'true') {
-        audio.muted = true;
-      }
-    } catch (e) {
+    } else {
       audio.volume = parseFloat(volumeSlider.value);
+    }
+    if (savedMute === 'true') {
+      audio.muted = true;
     }
     updateMuteIcons();
   }
 
-  // Configuración de resiliencia y buffer de streaming en vivo
-  const rawStreamSrc = audio.getAttribute('src') || audio.src || 'https://play14.tikast.com:22012/stream';
-  const baseStreamUrl = rawStreamSrc.split('?')[0];
-
-  let wasPlayingBeforeOffline = false;
-  let retryTimeout = null;
-  let isAutoRetrying = false;
-  let lastRetryTimestamp = 0;
-  const RETRY_COOLDOWN_MS = 10000;
-
-  function getFreshStreamUrl() {
-    return `${baseStreamUrl}?t=${Date.now()}`;
-  }
-
-  function showFatalError() {
-    if (retryTimeout) {
-      clearTimeout(retryTimeout);
-      retryTimeout = null;
-    }
-    isAutoRetrying = false;
-    updatePlayPauseIcons(false);
-    updateStickyStatus('error', 'Error al conectar');
-    if (status) {
-      status.textContent = 'Error al conectar';
-      status.className = 'stream-status-tag is-error';
-    }
-  }
-
-  function stopPlayback() {
-    if (retryTimeout) {
-      clearTimeout(retryTimeout);
-      retryTimeout = null;
-    }
-    isAutoRetrying = false;
-    wasPlayingBeforeOffline = false;
-    if (audio) {
-      audio.pause();
-    }
-  }
-
-  function playLiveStream() {
-    if (!audio) return Promise.reject(new Error('No audio element'));
-    if (retryTimeout) {
-      clearTimeout(retryTimeout);
-      retryTimeout = null;
-    }
-    const currentVol = audio.volume;
-    const currentMuted = audio.muted;
-    audio.src = getFreshStreamUrl();
-    audio.load();
-    audio.volume = currentVol;
-    audio.muted = currentMuted;
-    if (status) {
-      status.textContent = 'Conectando con la señal…';
-      status.className = 'stream-status-tag is-connecting';
-    }
-    return audio.play();
-  }
-
   // Estado inicial de conectividad
-  if (!navigator.onLine && status) {
+  if (!NetworkMonitor.isOnline() && status) {
     status.textContent = 'Sin conexión a internet';
     status.className = 'stream-status-tag is-error';
   }
 
   playBtn.addEventListener('click', () => {
     if (audio.paused) {
-      if (!navigator.onLine) {
+      if (!NetworkMonitor.isOnline()) {
         if (status) {
           status.textContent = 'Sin conexión a internet';
           status.className = 'stream-status-tag is-error';
@@ -288,7 +368,7 @@ if (audio && playBtn) {
         return;
       }
       isAutoRetrying = false;
-      lastRetryTimestamp = 0;
+      retryAttempt = 0;
       playLiveStream().catch((err) => {
         if (err && err.name === 'AbortError') return;
         showFatalError();
@@ -301,24 +381,21 @@ if (audio && playBtn) {
     }
   });
 
-  // Sticky Play Button sincronizado
   if (stickyPlayBtn) {
     stickyPlayBtn.addEventListener('click', () => {
       playBtn.click();
     });
   }
 
-  // Ambos controles usan el mismo estado y guardado.
+  // Sincronización de volumen y guardado en almacenamiento local
   audio.addEventListener('volumechange', updateMuteIcons);
   for (const slider of [volumeSlider, stickyVolumeSlider]) {
     if (!slider) continue;
     slider.addEventListener('input', () => {
       audio.volume = Number(slider.value);
       audio.muted = (audio.volume === 0);
-      try {
-        localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
-        localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
-      } catch (e) {}
+      StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
+      StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
       updateMuteIcons();
     });
   }
@@ -331,38 +408,19 @@ if (audio && playBtn) {
         if (volumeSlider) volumeSlider.value = 0.5;
         if (stickyVolumeSlider) stickyVolumeSlider.value = 0.5;
       }
-      try {
-        localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
-        localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
-      } catch (e) {}
+      StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+      StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
       updateMuteIcons();
     });
   }
 
-  // Sticky Mute Button sincronizado
   if (stickyMuteBtn) {
     stickyMuteBtn.addEventListener('click', () => {
       if (muteBtn) muteBtn.click();
     });
   }
 
-  function setStickyVisible(isVisible) {
-    if (!stickyPlayer) return;
-    if (isVisible) {
-      stickyPlayer.classList.add('is-visible');
-      stickyPlayer.removeAttribute('aria-hidden');
-      stickyPlayer.removeAttribute('inert');
-      try { stickyPlayer.inert = false; } catch (e) {}
-    } else {
-      stickyPlayer.classList.remove('is-visible');
-      stickyPlayer.setAttribute('aria-hidden', 'true');
-      stickyPlayer.setAttribute('inert', '');
-      try { stickyPlayer.inert = true; } catch (e) {}
-    }
-  }
-
-  // Botón para volver al reproductor principal con desplazamiento suave y enfoque
-  const playerCardEl = document.querySelector('#reproductor');
+  // Desplazamiento suave al reproductor principal desde el sticky player
   if (stickyTopBtn && playerCardEl) {
     stickyTopBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -375,13 +433,13 @@ if (audio && playBtn) {
     });
   }
 
-  // IntersectionObserver y listeners de scroll y resize para activar/desactivar el Sticky Bottom Player
+  // Visibilidad del Sticky Player con limitación por requestAnimationFrame (cero layout thrashing)
   if (stickyPlayer && playerCardEl) {
+    let isScrollTicking = false;
+
     const updateStickyVisibility = () => {
       if (typeof playerCardEl.getBoundingClientRect !== 'function') return;
       const rect = playerCardEl.getBoundingClientRect();
-      // El reproductor principal sale de vista en la zona superior cuando rect.top < -100
-      // o rect.bottom < 200, siempre que se haya hecho un scroll representativo (> 240px)
       const isPastControls = (rect.top < -100);
       const isPastCard = (rect.bottom < 200);
       const isScrolledDown = window.scrollY > 240;
@@ -390,6 +448,21 @@ if (audio && playBtn) {
         setStickyVisible(true);
       } else if (rect.top >= -60 || window.scrollY < 180) {
         setStickyVisible(false);
+      }
+    };
+
+    const onScrollOrResizeThrottled = () => {
+      if (!isScrollTicking) {
+        if (typeof window.requestAnimationFrame === 'function') {
+          window.requestAnimationFrame(() => {
+            updateStickyVisibility();
+            isScrollTicking = false;
+          });
+        } else {
+          updateStickyVisibility();
+          isScrollTicking = false;
+        }
+        isScrollTicking = true;
       }
     };
 
@@ -407,12 +480,12 @@ if (audio && playBtn) {
       stickyObserver.observe(playerCardEl);
     }
 
-    window.addEventListener('scroll', updateStickyVisibility, { passive: true });
-    window.addEventListener('resize', updateStickyVisibility, { passive: true });
-
+    window.addEventListener('scroll', onScrollOrResizeThrottled, { passive: true });
+    window.addEventListener('resize', onScrollOrResizeThrottled, { passive: true });
     updateStickyVisibility();
   }
 
+  // Eventos nativos del elemento de audio
   audio.addEventListener('play', () => {
     updatePlayPauseIcons(true);
     updateStickyStatus('connecting', 'Conectando…');
@@ -420,15 +493,17 @@ if (audio && playBtn) {
 
   audio.addEventListener('playing', () => {
     isAutoRetrying = false;
-    lastRetryTimestamp = 0;
+    retryAttempt = 0;
     updatePlayPauseIcons(true);
     updateStickyStatus('playing', 'En directo');
     if (status) {
       status.textContent = 'Conectado · Señal en directo';
       status.className = 'stream-status-tag is-playing';
     }
-    if (typeof updatePollingSchedule === 'function') {
+    if (typeof fetchLiveTrack === 'function') {
       fetchLiveTrack();
+    }
+    if (typeof updatePollingSchedule === 'function') {
       updatePollingSchedule();
     }
   });
@@ -441,12 +516,22 @@ if (audio && playBtn) {
     }
   });
 
+  audio.addEventListener('stalled', () => {
+    if (audio && !audio.paused && NetworkMonitor.isOnline()) {
+      updateStickyStatus('connecting', 'Buffering…');
+      if (status) {
+        status.textContent = 'Almacenando búfer de señal…';
+        status.className = 'stream-status-tag is-connecting';
+      }
+    }
+  });
+
   audio.addEventListener('pause', () => {
     if (isAutoRetrying) return;
     updatePlayPauseIcons(false);
     updateStickyStatus('paused', 'En pausa');
     if (status) {
-      if (!navigator.onLine || wasPlayingBeforeOffline) {
+      if (!NetworkMonitor.isOnline() || wasPlayingBeforeOffline) {
         status.textContent = 'Sin conexión a internet';
         status.className = 'stream-status-tag is-error';
         updateStickyStatus('error', 'Sin internet');
@@ -460,8 +545,9 @@ if (audio && playBtn) {
     }
   });
 
+  // Reintento con backoff exponencial para redes celulares intermitentes (2G/3G rural)
   audio.addEventListener('error', () => {
-    if (!navigator.onLine) {
+    if (!NetworkMonitor.isOnline()) {
       if (status) {
         status.textContent = 'Sin conexión a internet';
         status.className = 'stream-status-tag is-error';
@@ -469,35 +555,39 @@ if (audio && playBtn) {
       return;
     }
 
-    const now = Date.now();
-    const alreadyAttemptedRecently = isAutoRetrying || (now - lastRetryTimestamp < RETRY_COOLDOWN_MS);
-
-    if (alreadyAttemptedRecently) {
+    if (retryAttempt >= MAX_AUTO_RETRIES) {
       showFatalError();
     } else {
+      retryAttempt++;
       isAutoRetrying = true;
-      lastRetryTimestamp = now;
+      const backoffDelay = retryAttempt === 1 ? 2500 : (retryAttempt === 2 ? 5000 : 10000);
+
       if (status) {
-        status.textContent = 'Conectando con la señal…';
+        status.textContent = `Reconectando señal (${retryAttempt}/${MAX_AUTO_RETRIES})…`;
         status.className = 'stream-status-tag is-connecting';
       }
+      updateStickyStatus('connecting', 'Reconectando…');
+
       if (retryTimeout) clearTimeout(retryTimeout);
       retryTimeout = setTimeout(() => {
         retryTimeout = null;
         playLiveStream().catch((err) => {
           if (err && err.name === 'AbortError') return;
-          showFatalError();
+          if (retryAttempt >= MAX_AUTO_RETRIES) {
+            showFatalError();
+          }
         });
-      }, 2500);
+      }, backoffDelay);
     }
   });
 
-  // Manejo de eventos de red online y offline
+  // Eventos de conectividad del navegador
   window.addEventListener('offline', () => {
     if (retryTimeout) {
       clearTimeout(retryTimeout);
       retryTimeout = null;
       isAutoRetrying = false;
+      retryAttempt = 0;
     }
     const isAudioPlaying = audio && !audio.paused;
     if (isAudioPlaying) {
@@ -508,6 +598,7 @@ if (audio && playBtn) {
       status.textContent = 'Sin conexión a internet';
       status.className = 'stream-status-tag is-error';
     }
+    updateStickyStatus('error', 'Sin internet');
   });
 
   window.addEventListener('online', () => {
@@ -518,7 +609,7 @@ if (audio && playBtn) {
         status.className = 'stream-status-tag is-connecting';
       }
       isAutoRetrying = false;
-      lastRetryTimestamp = 0;
+      retryAttempt = 0;
       playLiveStream().catch((err) => {
         if (err && err.name === 'AbortError') return;
         showFatalError();
@@ -529,10 +620,10 @@ if (audio && playBtn) {
     }
   });
 
-  // MediaSession API para controles del sistema operativo (móvil, teclado, pantalla de bloqueo)
+  // MediaSession API para controles del sistema
   if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('play', () => {
-      if (!navigator.onLine) {
+      if (!NetworkMonitor.isOnline()) {
         if (status) {
           status.textContent = 'Sin conexión a internet';
           status.className = 'stream-status-tag is-error';
@@ -540,12 +631,13 @@ if (audio && playBtn) {
         return;
       }
       isAutoRetrying = false;
-      lastRetryTimestamp = 0;
+      retryAttempt = 0;
       playLiveStream().catch((err) => {
         if (err && err.name === 'AbortError') return;
         showFatalError();
       });
     });
+
     navigator.mediaSession.setActionHandler('pause', () => {
       if (typeof cancelSleepTimer === 'function') {
         cancelSleepTimer();
@@ -554,15 +646,10 @@ if (audio && playBtn) {
     });
   }
 
-  // --- ATAJOS DE TECLADO GLOBALES (ACCESIBILIDAD Y MEDIA KEYS) ---
+  // Atajos globales de teclado (Espacio, K, M) respetando accesibilidad
   window.addEventListener('keydown', (e) => {
-    // Regla crítica: ignorar atajos si se presionan teclas modificadoras (Ctrl, Alt, Meta/Cmd)
-    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
 
-    // Evitar repetición continua al mantener presionada la tecla
-    if (e.repeat) return;
-
-    // Regla crítica: ignorar si el foco actual es un campo de texto o elemento editable
     const active = document.activeElement;
     if (active) {
       const tagName = active.tagName;
@@ -576,9 +663,6 @@ if (audio && playBtn) {
     const isKeyM = (e.key === 'm' || e.key === 'M');
 
     if (isSpace) {
-      // Si el foco está en un elemento interactivo (botones como playBtn, enlaces,
-      // detalles desplegables o el canvas de peces que usa Espacio para alimentarlos),
-      // respetar su funcionamiento específico y no intervenir.
       const isInteractive = active && (
         active.tagName === 'BUTTON' ||
         active.tagName === 'A' ||
@@ -592,12 +676,8 @@ if (audio && playBtn) {
         ))
       );
 
-      if (isInteractive) {
-        return;
-      }
+      if (isInteractive) return;
 
-      // Si el foco está en el body o elementos no interactivos, evitar el desplazamiento
-      // vertical (scroll) y alternar entre reproducir y pausar la señal.
       e.preventDefault();
       if (playBtn) playBtn.click();
       return;
@@ -617,7 +697,7 @@ if (audio && playBtn) {
   });
 }
 
-// --- TEMPORIZADOR DE APAGADO (SLEEP TIMER) ---
+// --- 5. MÓDULO TEMPORIZADOR DE APAGADO (SleepTimer) ---
 const sleepTimerBtn = document.querySelector('#sleep-timer-btn');
 const sleepTimerMenu = document.querySelector('#sleep-timer-menu');
 const sleepTimerText = document.querySelector('#sleep-timer-text');
@@ -664,12 +744,9 @@ function startSleepTimer(minutes) {
   originalVolumeBeforeFade = audio.volume;
   isMidFade = false;
 
-  if (sleepTimerBtn) {
-    sleepTimerBtn.classList.add('is-active');
-  }
-  if (sleepCancelBtn) {
-    sleepCancelBtn.disabled = false;
-  }
+  if (sleepTimerBtn) sleepTimerBtn.classList.add('is-active');
+  if (sleepCancelBtn) sleepCancelBtn.disabled = false;
+
   sleepMenuItems.forEach(item => {
     if (parseInt(item.dataset.minutes, 10) === minutes) {
       item.classList.add('is-selected');
@@ -755,18 +832,15 @@ if (sleepTimerBtn && sleepTimerMenu) {
   sleepMenuItems.forEach(item => {
     item.addEventListener('click', () => {
       const mins = parseInt(item.dataset.minutes, 10);
-      if (mins > 0) {
-        startSleepTimer(mins);
-      } else {
-        cancelSleepTimer();
-      }
+      if (mins > 0) startSleepTimer(mins);
+      else cancelSleepTimer();
       sleepTimerMenu.setAttribute('hidden', '');
       sleepTimerBtn.setAttribute('aria-expanded', 'false');
     });
   });
 }
 
-// --- HISTORIAL DE TEMAS RECIENTES ("RECIÉN SONADAS") Y DEDICATORIA POR WHATSAPP ---
+// --- 6. MÓDULO HISTORIAL DE TEMAS RECIENTES (TrackHistory) ---
 const trackShareWa = document.querySelector('#track-share-wa');
 const recentTracksToggle = document.querySelector('#recent-tracks-toggle');
 const recentTracksPanel = document.querySelector('#recent-tracks-panel');
@@ -775,7 +849,7 @@ const recentBadge = document.querySelector('#recent-badge');
 
 let recentTracks = [];
 try {
-  const stored = sessionStorage.getItem('rinconada_recent_tracks');
+  const stored = StorageAdapter.session.get('rinconada_recent_tracks');
   if (stored) {
     const parsed = JSON.parse(stored);
     if (Array.isArray(parsed)) {
@@ -808,7 +882,7 @@ function renderRecentTracks() {
 }
 
 function addRecentTrack(title) {
-  if (!title) return;
+  if (!title || typeof title !== 'string') return;
   const lower = title.toLowerCase();
   if (lower.includes('sintonizando') || lower.includes('rinconada stereo') || lower.includes('transmisión')) return;
   if (recentTracks.length > 0 && recentTracks[0].title.toLowerCase() === lower) return;
@@ -818,9 +892,7 @@ function addRecentTrack(title) {
   recentTracks.unshift({ title, time: timeFormatted });
   if (recentTracks.length > 5) recentTracks.pop();
 
-  try {
-    sessionStorage.setItem('rinconada_recent_tracks', JSON.stringify(recentTracks));
-  } catch (e) {}
+  StorageAdapter.session.set('rinconada_recent_tracks', JSON.stringify(recentTracks));
   renderRecentTracks();
 }
 
@@ -838,11 +910,13 @@ if (recentTracksToggle && recentTracksPanel) {
 }
 renderRecentTracks();
 
-// --- CONSULTA EN VIVO DEL TEMA SONANDO (METADATA SHOUTCAST VÍA JSONP) ---
+// --- 7. MÓDULO DE METADATOS EN VIVO (MetadataService) ---
 const trackTitleEl = document.querySelector('#track-title');
 const trackBoxEl = document.querySelector('#now-playing-box');
 let currentTrackTitle = '';
 let metaPollInterval = null;
+let pendingMetaScript = null;
+let metaTimeoutId = null;
 
 function updateNowPlaying(rawTitle) {
   if (typeof rawTitle !== 'string') return;
@@ -867,17 +941,11 @@ function updateNowPlaying(rawTitle) {
       trackBoxEl.classList.add('is-live');
     }
 
-    // Actualizar dedicatoria por WhatsApp con el tema sonando
     const waDedicationMsg = encodeURIComponent(`¡Hola Rinconada Stereo! Estoy escuchando "${cleaned}" desde la web y quiero pedir una dedicatoria / saludo en cabina 📻🎶`);
     const waUrl = `https://wa.me/573052430933?text=${waDedicationMsg}`;
-    if (trackShareWa) {
-      trackShareWa.href = waUrl;
-    }
-    if (stickyWaBtn) {
-      stickyWaBtn.href = waUrl;
-    }
+    if (trackShareWa) trackShareWa.href = waUrl;
+    if (stickyWaBtn) stickyWaBtn.href = waUrl;
 
-    // Registrar en el historial de canciones recientes
     addRecentTrack(cleaned);
 
     if ('mediaSession' in navigator) {
@@ -888,51 +956,63 @@ function updateNowPlaying(rawTitle) {
           title: cleaned,
           artist: 'Rinconada Stereo',
           album: 'Señal en directo · La Pacha',
-          artwork: validScheme ? [
-            { src: logoUrl, sizes: '512x512', type: 'image/png' }
-          ] : []
+          artwork: validScheme ? [{ src: logoUrl, sizes: '512x512', type: 'image/png' }] : []
         });
-      } catch (e) {
-        // En navegadores con soporte parcial de MediaSession
-      }
+      } catch (e) {}
     }
   }
 }
 
-function fetchLiveTrack() {
-  const cbName = 'rs_meta_cb_' + Math.floor(Math.random() * 1000000);
-  const script = document.createElement('script');
-  let timer = null;
+// Handler estático para JSONP sin polución global ni desoptimizaciones V8
+window.__rsMetadataHandler = function(data) {
+  if (metaTimeoutId) {
+    clearTimeout(metaTimeoutId);
+    metaTimeoutId = null;
+  }
+  if (pendingMetaScript && pendingMetaScript.parentNode) {
+    pendingMetaScript.parentNode.removeChild(pendingMetaScript);
+    pendingMetaScript = null;
+  }
+  if (data && data.songtitle) {
+    updateNowPlaying(data.songtitle);
+  }
+};
 
-  function cleanup() {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
+function fetchLiveTrack() {
+  if (!NetworkMonitor.isOnline()) return;
+
+  if (pendingMetaScript && pendingMetaScript.parentNode) {
+    pendingMetaScript.parentNode.removeChild(pendingMetaScript);
+    pendingMetaScript = null;
+  }
+  if (metaTimeoutId) {
+    clearTimeout(metaTimeoutId);
+    metaTimeoutId = null;
+  }
+
+  const script = document.createElement('script');
+  pendingMetaScript = script;
+
+  metaTimeoutId = setTimeout(() => {
+    if (pendingMetaScript && pendingMetaScript.parentNode) {
+      pendingMetaScript.parentNode.removeChild(pendingMetaScript);
+      pendingMetaScript = null;
     }
-    if (window[cbName]) {
-      try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+    metaTimeoutId = null;
+  }, 6000);
+
+  script.onerror = function() {
+    if (metaTimeoutId) {
+      clearTimeout(metaTimeoutId);
+      metaTimeoutId = null;
     }
     if (script.parentNode) {
       script.parentNode.removeChild(script);
     }
-  }
-
-  timer = setTimeout(() => {
-    cleanup();
-  }, 6000);
-
-  window[cbName] = function(data) {
-    cleanup();
-    if (data && data.songtitle) {
-      updateNowPlaying(data.songtitle);
-    }
+    pendingMetaScript = null;
   };
 
-  script.onerror = function() {
-    cleanup();
-  };
-
-  script.src = `https://play14.tikast.com:22012/stats?sid=1&json=1&callback=${cbName}&_t=${Date.now()}`;
+  script.src = `https://play14.tikast.com:22012/stats?sid=1&json=1&callback=__rsMetadataHandler&_t=${Date.now()}`;
   document.head.appendChild(script);
 }
 
@@ -941,31 +1021,42 @@ function updatePollingSchedule() {
     clearInterval(metaPollInterval);
     metaPollInterval = null;
   }
+
+  if (!NetworkMonitor.isOnline()) return;
+
   const isPlaying = audio && !audio.paused;
   const isHidden = document.hidden;
+  const isSaveData = NetworkMonitor.isSaveDataEnabled();
 
   let intervalMs;
-  if (isHidden) {
-    intervalMs = isPlaying ? 30000 : 60000;
+  if (isPlaying) {
+    if (isHidden) {
+      intervalMs = 30000;
+    } else {
+      intervalMs = isSaveData ? 16000 : 8000;
+    }
   } else {
-    intervalMs = isPlaying ? 8000 : 30000;
+    if (isHidden) {
+      intervalMs = 90000;
+    } else {
+      intervalMs = isSaveData ? 60000 : 30000;
+    }
   }
+
   metaPollInterval = setInterval(fetchLiveTrack, intervalMs);
 }
 
-// Iniciar sondeo de metadatos (inmediato y adaptativo según estado)
 fetchLiveTrack();
 updatePollingSchedule();
 
-// Ahorro de recursos si la pestaña pasa a segundo plano o vuelve al frente
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
+  if (!document.hidden && NetworkMonitor.isOnline()) {
     fetchLiveTrack();
   }
   updatePollingSchedule();
 });
 
-// Respaldo de iframe virtualtronics en details
+// Reproductor alternativo en iframe bajo demanda
 const alternate = document.querySelector('#alternate-player');
 if (alternate) {
   alternate.addEventListener('toggle', () => {
@@ -980,7 +1071,7 @@ if (alternate) {
   });
 }
 
-// --- CARGA DIFERIDA INTELIGENTE DEL CHAT (CBOX) ---
+// --- 8. MÓDULO CARGA DIFERIDA DE CHAT (ChatLoader) ---
 const chatIframe = document.querySelector('#chat iframe[data-src]');
 if (chatIframe) {
   let chatLoaded = false;
@@ -994,42 +1085,39 @@ if (chatIframe) {
     }
   };
 
-  // Carga inmediata si el usuario interactúa o enfoca la tarjeta del chat
   const chatCard = document.querySelector('#chat');
   if (chatCard) {
-    ['pointerenter', 'touchstart', 'focusin'].forEach(evt => {
+    ['pointerenter', 'touchstart', 'focusin', 'click'].forEach(evt => {
       chatCard.addEventListener(evt, loadChat, { once: true, passive: true });
     });
   }
 
-  // Carga inteligente por visibilidad (IntersectionObserver):
-  // En escritorio (hero) se activa de inmediato sin bloquear; en móvil espera a que el usuario se acerque a la sección.
-  if ('IntersectionObserver' in window && chatCard) {
-    const chatObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          loadChat();
-          observer.disconnect();
-        }
-      });
-    }, { rootMargin: '250px 0px' });
-    chatObserver.observe(chatCard);
-  } else {
-    // Respaldo para navegadores sin IntersectionObserver
-    if ('requestIdleCallback' in window) {
-      window.requestIdleCallback(() => {
-        setTimeout(loadChat, 1500);
-      }, { timeout: 4000 });
+  // En conexiones lentas o Save-Data, solo cargar el chat si el usuario interactúa explícitamente
+  if (!NetworkMonitor.isSaveDataEnabled()) {
+    if ('IntersectionObserver' in window && chatCard) {
+      const chatObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            loadChat();
+            observer.disconnect();
+          }
+        });
+      }, { rootMargin: '250px 0px' });
+      chatObserver.observe(chatCard);
     } else {
-      window.addEventListener('load', () => {
-        setTimeout(loadChat, 2000);
-      }, { once: true });
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(() => setTimeout(loadChat, 1500), { timeout: 4000 });
+      } else {
+        window.addEventListener('load', () => setTimeout(loadChat, 2000), { once: true });
+      }
     }
   }
 }
 
-// --- CLIMA NATIVO REGIONAL CON OPEN-METEO (LA PACHA PROMINENTE) ---
+// --- 9. MÓDULO DE PRONÓSTICO REGIONAL CON CACHÉ (WeatherService) ---
 const weatherCard = document.querySelector('#weather-card');
+const WEATHER_CACHE_KEY = 'rinconada_weather_cache';
+const WEATHER_CACHE_TTL = 30 * 60 * 1000; // 30 minutos de validez en caché de sesión
 
 function getWeatherInterpretation(code) {
   if (code === 0) {
@@ -1065,16 +1153,48 @@ function getWeatherInterpretation(code) {
   }
 }
 
+function renderWeatherHTML(temp, desc, icon, humidity, wind) {
+  if (!weatherCard) return;
+  weatherCard.innerHTML = `
+    <div class="weather-main">
+      <div class="weather-temp-group">
+        <div class="weather-temp">${temp}°C</div>
+        <div class="weather-location-highlight">La Pacha, <span>Magdalena</span></div>
+        <div class="weather-desc">${desc}</div>
+      </div>
+      <div class="weather-icon-box" aria-hidden="true">${icon}</div>
+    </div>
+    <div class="weather-sub">
+      <span>💧 Humedad: <strong>${humidity}%</strong></span>
+      <span>💨 Viento: <strong>${wind} km/h</strong></span>
+    </div>
+  `;
+}
+
 async function loadOpenMeteoWeather() {
   if (!weatherCard) return;
+
+  // 1. Verificación previa en caché de sesión (0 ms de espera y 0 datos transferidos)
+  try {
+    const cachedRaw = StorageAdapter.session.get(WEATHER_CACHE_KEY);
+    if (cachedRaw) {
+      const cached = JSON.parse(cachedRaw);
+      if (cached && typeof cached.timestamp === 'number' && Date.now() - cached.timestamp < WEATHER_CACHE_TTL) {
+        renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
+        return;
+      }
+    }
+  } catch (e) {}
+
   const lat = 9.2579;
   const lon = -74.2599;
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=America%2FBogota`;
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
+
   try {
     const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
-    if (!res.ok) throw new Error('Respuesta no exitosa de la API');
+    if (!res.ok) throw new Error('Respuesta no exitosa');
     const data = await res.json();
     const current = data && data.current;
     if (
@@ -1084,28 +1204,40 @@ async function loadOpenMeteoWeather() {
       typeof current.weather_code !== 'number' || !Number.isFinite(current.weather_code) ||
       typeof current.wind_speed_10m !== 'number' || !Number.isFinite(current.wind_speed_10m)
     ) {
-      throw new Error('Datos incompletos o inválidos de Open-Meteo');
+      throw new Error('Datos incompletos');
     }
+
     const info = getWeatherInterpretation(current.weather_code);
     const temp = Math.round(current.temperature_2m);
     const humidity = Math.round(current.relative_humidity_2m);
     const wind = Math.round(current.wind_speed_10m);
 
-    weatherCard.innerHTML = `
-      <div class="weather-main">
-        <div class="weather-temp-group">
-          <div class="weather-temp">${temp}°C</div>
-          <div class="weather-location-highlight">La Pacha, <span>Magdalena</span></div>
-          <div class="weather-desc">${info.desc}</div>
-        </div>
-        <div class="weather-icon-box" aria-hidden="true">${info.icon}</div>
-      </div>
-      <div class="weather-sub">
-        <span>💧 Humedad: <strong>${humidity}%</strong></span>
-        <span>💨 Viento: <strong>${wind} km/h</strong></span>
-      </div>
-    `;
+    // Guardar en caché para visitas posteriores
+    try {
+      StorageAdapter.session.set(WEATHER_CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        temp,
+        humidity,
+        wind,
+        desc: info.desc,
+        icon: info.icon
+      }));
+    } catch (e) {}
+
+    renderWeatherHTML(temp, info.desc, info.icon, humidity, wind);
   } catch (err) {
+    // Si la red falla pero hay un pronóstico previo en caché, preservarlo
+    try {
+      const cachedRaw = StorageAdapter.session.get(WEATHER_CACHE_KEY);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (cached && typeof cached.temp === 'number') {
+          renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
+          return;
+        }
+      }
+    } catch (e) {}
+
     weatherCard.innerHTML = `
       <div class="weather-error">
         <p>Pronóstico no disponible temporalmente.</p>
@@ -1129,23 +1261,31 @@ if (weatherSection && 'IntersectionObserver' in window) {
   loadOpenMeteoWeather();
 }
 
-// --- LA CIÉNAGA INTERACTIVA: ALIMENTAR A LOS PECES EN CANVAS 2D ---
+// --- 10. MÓDULO CIÉNAGA INTERACTIVA (FishPond) ---
+// Simulación Canvas 2D optimizada para GPU móvil (DPR limitado a 2, sin lecturas de DOM en bucle)
 (function initFishPond() {
   const canvas = document.querySelector('#fish-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let dpr = window.devicePixelRatio || 1;
+  const reducedMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+  // Limitar DPR a 2 para evitar saturación de memoria y calor en pantallas móviles 3x/4x
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
   let width = 0;
   let height = 0;
   let animationId = null;
   let isRunning = false;
+  let isDarkTheme = ThemeManager.isDark();
 
-  const fishCount = 14; // 15%+ más peces (antes 12)
-  
-  // Catálogo ampliado a 8 especies autóctonas con gran variedad morfológica y cromática
+  ThemeManager.subscribe((theme) => {
+    isDarkTheme = (theme === 'dark');
+    if (reducedMotion && isPondInView) render();
+  });
+
+  const fishCount = 14;
+
   const fishSpecies = [
     {
       name: 'bocachico',
@@ -1267,7 +1407,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
   }
 
   function dropFood(x, y) {
-    // Al hacer clic, se lanzan 3 a 5 partículas de alimento
     const count = 3 + Math.floor(Math.random() * 3);
     for (let i = 0; i < count; i++) {
       foodCrumbs.push({
@@ -1284,7 +1423,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
   function update(dt = 1) {
     const pad = 35;
 
-    // Actualizar migajas de alimento
     for (let i = foodCrumbs.length - 1; i >= 0; i--) {
       const c = foodCrumbs[i];
       c.y += c.vy * dt;
@@ -1294,11 +1432,9 @@ if (weatherSection && 'IntersectionObserver' in window) {
       }
     }
 
-    // Actualizar peces
     for (const f of fishList) {
       f.wagPhase += f.wagSpeed * dt;
 
-      // 1. Si hay comida en el agua, los peces van directamente hacia la migaja más cercana
       let targetCrumb = null;
       let minCrumbDist = 9999;
       for (let i = 0; i < foodCrumbs.length; i++) {
@@ -1318,29 +1454,24 @@ if (weatherSection && 'IntersectionObserver' in window) {
         if (dist > 10) {
           f.vx += (dx / dist) * 0.35 * dt;
           f.vy += (dy / dist) * 0.35 * dt;
-          f.wagSpeed = 0.22; // Nado emocionado hacia el alimento
+          f.wagSpeed = 0.22;
         } else {
-          // El pez se come la migaja
           foodCrumbs.splice(targetCrumb.index, 1);
           ripples.push({ x: f.x, y: f.y, radius: 2, alpha: 0.4 });
           f.vx *= 0.5;
           f.vy *= 0.5;
         }
-      } 
-      // 2. Si no hay comida pero el cursor está en el estanque, los peces se acercan al cursor como esperando comida
-      else if (pointer.active) {
+      } else if (pointer.active) {
         const dx = pointer.x - f.x;
         const dy = pointer.y - f.y;
         const dist = Math.hypot(dx, dy);
 
         if (dist > 28 && dist < 240) {
-          // Atracción suave hacia la mano / cursor
           const pull = 0.22;
           f.vx += (dx / dist) * pull * dt;
           f.vy += (dy / dist) * pull * dt;
           f.wagSpeed = 0.17;
         } else if (dist <= 28) {
-          // Dan vueltas alrededor del cursor esperando alimento
           f.vx += (-dy / (dist || 1)) * 0.4 * dt;
           f.vy += (dx / (dist || 1)) * 0.4 * dt;
           f.wagSpeed = 0.14;
@@ -1349,7 +1480,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
         f.wagSpeed = 0.11;
       }
 
-      // Fricción y límite de velocidad
       const curSpeed = Math.hypot(f.vx, f.vy);
       const maxSpeed = (foodCrumbs.length > 0 || pointer.active) ? f.speed * 2.3 : f.speed * 1.5;
       if (curSpeed > maxSpeed) {
@@ -1364,13 +1494,11 @@ if (weatherSection && 'IntersectionObserver' in window) {
       f.x += f.vx * dt;
       f.y += f.vy * dt;
 
-      // Mantener dentro de los bordes con giro suave
       if (f.x < pad) f.vx += 0.1 * dt;
       else if (f.x > width - pad) f.vx -= 0.1 * dt;
       if (f.y < 18) f.vy += 0.08 * dt;
       else if (f.y > height - 18) f.vy -= 0.08 * dt;
 
-      // Orientación del pez hacia el movimiento
       const moveAngle = Math.atan2(f.vy, f.vx);
       let diff = moveAngle - f.angle;
       while (diff < -Math.PI) diff += Math.PI * 2;
@@ -1378,7 +1506,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
       f.angle += diff * (1 - Math.pow(1 - 0.09, dt));
     }
 
-    // Actualizar ondas
     for (let i = ripples.length - 1; i >= 0; i--) {
       const r = ripples[i];
       r.radius += 1.4 * dt;
@@ -1424,26 +1551,22 @@ if (weatherSection && 'IntersectionObserver' in window) {
     // Aleta caudal diferenciada por especie
     ctx.beginPath();
     if (f.tailType === 'swallow') {
-      // Cola ahorquillada en V profunda (Bocachico)
       ctx.moveTo(-s * 0.45, 0);
       ctx.lineTo(-s * 0.95, -s * 0.32 + wag);
       ctx.lineTo(-s * 0.65, wag * 0.5);
       ctx.lineTo(-s * 0.95, s * 0.32 + wag);
       ctx.closePath();
     } else if (f.tailType === 'fan') {
-      // Cola en abanico amplio redondeado (Dorada)
       ctx.moveTo(-s * 0.45, 0);
       ctx.quadraticCurveTo(-s * 0.88, -s * 0.38 + wag, -s * 0.82, wag);
       ctx.quadraticCurveTo(-s * 0.88, s * 0.38 + wag, -s * 0.45, 0);
     } else if (f.tailType === 'rounded') {
-      // Cola ancha de paleta (Mojarra)
       ctx.moveTo(-s * 0.45, -s * 0.12);
       ctx.lineTo(-s * 0.85, -s * 0.3 + wag);
       ctx.quadraticCurveTo(-s * 0.92, wag, -s * 0.85, s * 0.3 + wag);
       ctx.lineTo(-s * 0.45, s * 0.12);
       ctx.closePath();
     } else {
-      // Cola veloz / ahusada (Sardina / Bagrecito)
       ctx.moveTo(-s * 0.45, 0);
       ctx.lineTo(-s * 0.82, -s * 0.22 + wag);
       ctx.lineTo(-s * 0.68, wag * 0.4);
@@ -1452,7 +1575,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
     }
     ctx.fill();
 
-    // Barbillones / bigotes si es bagrecito
     if (f.hasBarbels) {
       ctx.strokeStyle = f.color;
       ctx.lineWidth = 1.2;
@@ -1467,7 +1589,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
       ctx.stroke();
     }
 
-    // Ojo con brillo
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(s * 0.38, -s * (aspect * 0.35), s * 0.065, 0, Math.PI * 2);
@@ -1478,7 +1599,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
     ctx.arc(s * 0.4, -s * (aspect * 0.35), s * 0.038, 0, Math.PI * 2);
     ctx.fill();
 
-    // Reflejo dorsal plateado / dorado
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1491,10 +1611,8 @@ if (weatherSection && 'IntersectionObserver' in window) {
   function render() {
     ctx.clearRect(0, 0, width, height);
 
-    // Dibujar ondas en el agua adaptadas al modo nocturno o diurno
-    const isDarkPond = document.documentElement.getAttribute('data-theme') === 'dark' ||
-      (!document.documentElement.getAttribute('data-theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const rippleRgb = isDarkPond ? '77, 147, 247' : '54, 118, 206';
+    // Ondas en agua con color basado en la variable de tema en memoria (sin consultar el DOM a 60fps)
+    const rippleRgb = isDarkTheme ? '77, 147, 247' : '54, 118, 206';
     for (const r of ripples) {
       ctx.strokeStyle = `rgba(${rippleRgb}, ${r.alpha})`;
       ctx.lineWidth = 1.5;
@@ -1503,7 +1621,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
       ctx.stroke();
     }
 
-    // Dibujar alimento
     for (const c of foodCrumbs) {
       ctx.fillStyle = `rgba(226, 165, 50, ${c.life})`;
       ctx.beginPath();
@@ -1514,7 +1631,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
       ctx.stroke();
     }
 
-    // Dibujar peces
     for (const f of fishList) {
       drawFish(f);
     }
@@ -1548,7 +1664,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
     lastFrameTime = 0;
   }
 
-  // Interacción: Mover cursor (atraer peces)
   canvas.addEventListener('pointermove', (e) => {
     const rect = canvas.getBoundingClientRect();
     pointer.x = e.clientX - rect.left;
@@ -1556,7 +1671,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
     pointer.active = true;
   });
 
-  // Interacción: Clic / Tap (soltar alimento)
   canvas.addEventListener('pointerdown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const px = e.clientX - rect.left;
@@ -1572,7 +1686,6 @@ if (weatherSection && 'IntersectionObserver' in window) {
     pointer.active = false;
   });
 
-  // Interacción por teclado (WCAG 2.1.1 Operable por teclado)
   canvas.addEventListener('keydown', (e) => {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
@@ -1627,12 +1740,9 @@ if (weatherSection && 'IntersectionObserver' in window) {
   }
 })();
 
-// --- REGISTRO DE SERVICE WORKER (PWA & 0 MS REPEAT VISITS) ---
+// --- 11. REGISTRO DE SERVICE WORKER ---
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => {
-      // Registro fallido o entorno sin soporte HTTPS
-    });
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
-

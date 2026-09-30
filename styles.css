@@ -203,7 +203,12 @@ a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visibl
 .skip-link { position: absolute; left: 1rem; top: -5rem; z-index: 10; padding: .7rem; background: white; border-radius: .4rem; box-shadow: 0 4px 14px rgba(0,0,0,0.2); font-weight: 700; color: #092140; }
 .skip-link:focus { top: 1rem; }
 
-:root[data-theme="dark"] .skip-link,
+:root[data-theme="dark"] .skip-link {
+  background: #0b2240;
+  color: #f2f7ff;
+  border: 1px solid #1e4577;
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .skip-link {
     background: #0b2240;
@@ -672,6 +677,7 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
   transform: translateY(105%);
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity;
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
   padding: 0.55rem clamp(0.9rem, 2.5vw, 2.2rem) calc(0.55rem + env(safe-area-inset-bottom, 0px));
   color: #ffffff;
@@ -915,7 +921,10 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 /* MASCOTA OFICIAL: LOCUPEZ */
 .mascot-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.8rem 1.6rem 1.6rem; border-radius: 1.25rem; background: var(--locupez-bg); border: 1px solid var(--locupez-border); box-shadow: 0 16px 40px rgba(13, 98, 217, 0.12); position: relative; overflow: hidden; text-align: center; transition: background 0.25s ease, border-color 0.25s ease; }
 .mascot-card::before { content: ""; position: absolute; width: 280px; height: 280px; background: radial-gradient(circle, rgba(13, 98, 217, 0.14) 0%, rgba(255, 208, 0, 0.1) 50%, transparent 70%); top: 38%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-:root[data-theme="dark"] .mascot-card::before,
+:root[data-theme="dark"] .mascot-card::before {
+  background: radial-gradient(circle, rgba(77, 147, 247, 0.18) 0%, rgba(255, 208, 0, 0.08) 50%, transparent 70%);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .mascot-card::before {
     background: radial-gradient(circle, rgba(77, 147, 247, 0.18) 0%, rgba(255, 208, 0, 0.08) 50%, transparent 70%);
@@ -963,6 +972,8 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 /* SECCIÓN 03 / CONTACTO */
 .contact-section {
   padding: 3rem clamp(1rem, 2vw, 2.2rem) 5rem;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 380px;
 }
 .schedule-section > *, .contact-section > * { max-width: 1560px; margin-left: auto; margin-right: auto; }
 .section-number { padding-bottom: 1.2rem; border-bottom: 1px solid var(--line); color: var(--text-lead); }
@@ -1021,6 +1032,8 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
   color: #d8e5f5;
   border-top: 1px solid var(--footer-border);
   padding: clamp(3rem, 5vw, 4.5rem) clamp(1rem, 2vw, 2.2rem) calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  content-visibility: auto;
+  contain-intrinsic-size: auto 450px;
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 .footer-inner {
@@ -1040,6 +1053,7 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .footer-brand img {
   width: clamp(160px, 20vw, 210px);
   height: auto;
+  aspect-ratio: 304 / 145;
   display: block;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
 }

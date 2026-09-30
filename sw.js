@@ -68,10 +68,37 @@ self.addEventListener('fetch', (event) => {
     return response;
   }
 
-  // 2. Estrategia para navegación HTML: Network-First con respaldo en caché
+  // 2. Estrategia para navegación HTML: Network-First con límite de espera (timeout) y respaldo en caché
   if (req.mode === 'navigate') {
+    const networkFetch = (typeof setTimeout !== 'undefined')
+      ? new Promise((resolve, reject) => {
+          let done = false;
+          const timer = setTimeout(() => {
+            if (!done) {
+              done = true;
+              reject(new Error('Network timeout'));
+            }
+          }, 3000);
+          fetch(req)
+            .then(res => {
+              if (!done) {
+                done = true;
+                clearTimeout(timer);
+                resolve(res);
+              }
+            })
+            .catch(err => {
+              if (!done) {
+                done = true;
+                clearTimeout(timer);
+                reject(err);
+              }
+            });
+        })
+      : fetch(req);
+
     event.respondWith(
-      fetch(req)
+      networkFetch
         .then(cacheResponse)
         .catch(async () => {
           const cache = await caches.open(CACHE_NAME);

@@ -115,6 +115,13 @@ async function checkApp(stored) {
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(elements['#audio-status'].textContent, 'Error al conectar');
   assert.equal(elements['#audio-status'].className, 'stream-status-tag is-error');
+
+  // Offline safety: fetchLiveTrack should not inject script when offline
+  context.navigator.onLine = false;
+  const headChildCount = document.head.children.length;
+  vm.runInContext('fetchLiveTrack()', context);
+  assert.equal(document.head.children.length, headChildCount, 'fetchLiveTrack must not inject scripts when offline');
+  context.navigator.onLine = true;
 }
 
 async function checkWorker() {
@@ -201,11 +208,25 @@ async function checkWorker() {
   assert.equal(await entries.get(`${scope}styles.css`).text(), 'fresh');
 }
 
+function checkAssetsAndStyles() {
+  const css = source('styles.css');
+  assert.ok(!/,\s*@media/.test(css), 'styles.css must not have invalid trailing commas before @media');
+
+  const html = source('index.html');
+  assert.ok(!/<link[^>]+sizes=["'](?:512x512|192x192)["'][^>]*>/i.test(html),
+    'index.html should not include heavy 192x192 or 512x512 icons in head');
+
+  const manifest = JSON.parse(source('manifest.webmanifest'));
+  assert.ok(manifest.icons.some(i => i.sizes === '192x192'), 'manifest.webmanifest must preserve 192x192 icon');
+  assert.ok(manifest.icons.some(i => i.sizes === '512x512'), 'manifest.webmanifest must preserve 512x512 icon');
+}
+
 (async () => {
+  checkAssetsAndStyles();
   for (const stored of [null, '{bad json', 'null', '{}', '[null,{"title":42}]',
     JSON.stringify(Array.from({ length: 8 }, (_, i) => ({ title: `Track ${i}`, time: '12:00' })))]) {
     await checkApp(stored);
   }
   await checkWorker();
-  console.log('PASS: safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, and lean precache.');
+  console.log('PASS: safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, and low-bandwidth icon hygiene.');
 })().catch(err => { console.error(err); process.exitCode = 1; });
