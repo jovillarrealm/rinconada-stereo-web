@@ -176,13 +176,14 @@ function updateNowPlaying(rawTitle) {
     if ('mediaSession' in navigator) {
       try {
         const logoUrl = new URL('assets/logo-rinconada.png', window.location.href).href;
+        const validScheme = /^(https?:|blob:|data:)/i.test(logoUrl);
         navigator.mediaSession.metadata = new MediaMetadata({
           title: cleaned,
           artist: 'Rinconada Stereo',
           album: 'Señal en directo · La Pacha',
-          artwork: [
+          artwork: validScheme ? [
             { src: logoUrl, sizes: '512x512', type: 'image/png' }
-          ]
+          ] : []
         });
       } catch (e) {
         // En navegadores con soporte parcial de MediaSession
@@ -282,7 +283,7 @@ if (chatIframe) {
     }
   };
 
-  // Carga anticipada si el usuario interactúa o enfoca la tarjeta del chat
+  // Carga inmediata si el usuario interactúa o enfoca la tarjeta del chat
   const chatCard = document.querySelector('#chat');
   if (chatCard) {
     ['pointerenter', 'touchstart', 'focusin'].forEach(evt => {
@@ -290,15 +291,29 @@ if (chatIframe) {
     });
   }
 
-  // Carga en tiempo de inactividad para no competir con el reproductor ni con el render inicial
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(() => {
-      setTimeout(loadChat, 1200);
-    }, { timeout: 3500 });
+  // Carga inteligente por visibilidad (IntersectionObserver):
+  // En escritorio (hero) se activa de inmediato sin bloquear; en móvil espera a que el usuario se acerque a la sección.
+  if ('IntersectionObserver' in window && chatCard) {
+    const chatObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          loadChat();
+          observer.disconnect();
+        }
+      });
+    }, { rootMargin: '250px 0px' });
+    chatObserver.observe(chatCard);
   } else {
-    window.addEventListener('load', () => {
-      setTimeout(loadChat, 1500);
-    }, { once: true });
+    // Respaldo para navegadores sin IntersectionObserver
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => {
+        setTimeout(loadChat, 1500);
+      }, { timeout: 4000 });
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(loadChat, 2000);
+      }, { once: true });
+    }
   }
 }
 
