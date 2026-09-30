@@ -1,3 +1,90 @@
+// --- GESTIÓN DE TEMA (MODO OSCURO / CLARO CON PERSISTENCIA) ---
+function initTheme() {
+  const toggleBtn = document.querySelector('#theme-toggle');
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  const STORAGE_KEY = 'rinconada_theme';
+
+  function getSystemTheme() {
+    return mediaQuery && mediaQuery.matches ? 'dark' : 'light';
+  }
+
+  function getSavedTheme() {
+    try {
+      return localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function getCurrentTheme() {
+    return document.documentElement.getAttribute('data-theme') || getSavedTheme() || getSystemTheme();
+  }
+
+  function applyTheme(theme, isUserAction = false) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (isUserAction) {
+      try {
+        localStorage.setItem(STORAGE_KEY, theme);
+      } catch (e) {
+        // localStorage no disponible o modo incógnito restrictivo
+      }
+    }
+
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', theme === 'dark' ? '#071526' : '#0d62d9');
+    }
+
+    if (toggleBtn) {
+      const isDark = theme === 'dark';
+      const targetLabel = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+      toggleBtn.setAttribute('aria-label', targetLabel);
+      toggleBtn.setAttribute('title', targetLabel);
+      toggleBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+
+      const sunIcon = toggleBtn.querySelector('.theme-toggle-sun');
+      const moonIcon = toggleBtn.querySelector('.theme-toggle-moon');
+      if (sunIcon && moonIcon) {
+        sunIcon.style.display = isDark ? 'inline-flex' : 'none';
+        moonIcon.style.display = isDark ? 'none' : 'inline-flex';
+      }
+    }
+  }
+
+  // Inicializar estado del botón según el tema activo actual
+  applyTheme(getCurrentTheme(), false);
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const current = getCurrentTheme();
+      const nextTheme = current === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme, true);
+    });
+  }
+
+  // Escuchar cambios de preferencia del sistema si el usuario no ha forzado un tema manual
+  if (mediaQuery) {
+    const handleSystemThemeChange = (e) => {
+      const saved = getSavedTheme();
+      if (!saved) {
+        applyTheme(e.matches ? 'dark' : 'light', false);
+      }
+    };
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleSystemThemeChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleSystemThemeChange);
+    }
+  }
+}
+
+// Inicialización inmediata o al cargar el DOM
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTheme);
+} else {
+  initTheme();
+}
+
 // --- REPRODUCTOR CUSTOMIZADO Y SINCRONIZACIÓN ---
 const audio = document.querySelector('#radio');
 const status = document.querySelector('#audio-status');
@@ -972,9 +1059,12 @@ if (weatherSection && 'IntersectionObserver' in window) {
   function render() {
     ctx.clearRect(0, 0, width, height);
 
-    // Dibujar ondas en el agua
+    // Dibujar ondas en el agua adaptadas al modo nocturno o diurno
+    const isDarkPond = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const rippleRgb = isDarkPond ? '77, 147, 247' : '54, 118, 206';
     for (const r of ripples) {
-      ctx.strokeStyle = `rgba(54, 118, 206, ${r.alpha})`;
+      ctx.strokeStyle = `rgba(${rippleRgb}, ${r.alpha})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);

@@ -4,7 +4,20 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://play14.tikast.com:22012; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https://play14.tikast.com:22012 blob:; connect-src 'self' https://api.open-meteo.com https://play14.tikast.com:22012; frame-src 'self' https://www3.cbox.ws https://virtualtronics.com; font-src 'self'; manifest-src 'self'; worker-src 'self';">
-    <meta name="theme-color" content="#3676ce">
+    <meta name="theme-color" content="#0d62d9">
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('rinconada_theme');
+          var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+          var metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) {
+            metaTheme.setAttribute('content', theme === 'dark' ? '#071526' : '#0d62d9');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <title>Rinconada Stereo — Emisora en vivo · Un encuentro con tu región</title>
     <meta name="description" content="Escucha la señal en vivo de Rinconada Stereo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Radio comunitaria, música de acordeón y noticias de nuestra tierra.">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -162,11 +175,33 @@
             <img src="assets/logo-rinconada.png" width="300" height="133" alt="Rinconada Stereo" fetchpriority="high" decoding="async">
           </picture>
         </a>
-        <nav aria-label="Principal">
-          <a href="#inicio">Inicio</a>
-          <a href="#blogs">Blogs</a>
-          <a href="#contacto">Contacto</a>
-        </nav>
+        <div class="header-nav-wrap">
+          <nav aria-label="Principal">
+            <a href="#inicio">Inicio</a>
+            <a href="#blogs">Blogs</a>
+            <a href="#contacto">Contacto</a>
+          </nav>
+          <button class="theme-toggle-btn" id="theme-toggle" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro">
+            <span class="theme-toggle-icon theme-toggle-sun" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </span>
+            <span class="theme-toggle-icon theme-toggle-moon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+          </button>
+        </div>
       </div>
     </header>
 
