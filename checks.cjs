@@ -249,6 +249,24 @@ function checkCloudflareConfigs() {
   assert.ok(/\/en-vivo\s+\/\s+301/.test(redirects), '_redirects must redirect /en-vivo to /');
   assert.ok(/\/streaming\s+\/\s+301/.test(redirects), '_redirects must redirect /streaming to /');
   assert.ok(/\/radio\s+\/\s+301/.test(redirects), '_redirects must redirect /radio to /');
+
+  const wranglerConfig = JSON.parse(source('wrangler.jsonc'));
+  assert.equal(wranglerConfig.name, 'rinconadastereo', 'wrangler.jsonc must configure worker name');
+  assert.equal(wranglerConfig.workers_dev, true, 'wrangler.jsonc must explicitly enable workers_dev to silence CI warning');
+  assert.equal(wranglerConfig.preview_urls, true, 'wrangler.jsonc must explicitly configure preview_urls to silence CI warning');
+  assert.equal(wranglerConfig.assets.not_found_handling, '404-page', 'wrangler.jsonc must route 404s to 404.html');
+  assert.equal(wranglerConfig.assets.directory, '.', 'wrangler.jsonc assets directory must be .');
+
+  const assetsIgnore = source('.assetsignore');
+  assert.ok(assetsIgnore.includes('.git/'), '.assetsignore must exclude .git/ to prevent source leak');
+  assert.ok(assetsIgnore.includes('*.md'), '.assetsignore must exclude markdown documentation');
+  assert.ok(assetsIgnore.includes('research/'), '.assetsignore must exclude research folder');
+  assert.ok(assetsIgnore.includes('checks.cjs'), '.assetsignore must exclude test scripts');
+  assert.ok(assetsIgnore.includes('.wrangler/'), '.assetsignore must exclude .wrangler/');
+  assert.ok(assetsIgnore.includes('package.json'), '.assetsignore must exclude package.json');
+
+  const pkg = JSON.parse(source('package.json'));
+  assert.ok(pkg.devDependencies && pkg.devDependencies.wrangler, 'package.json must declare wrangler in devDependencies');
 }
 
 function checkInstitutionalIdentity() {

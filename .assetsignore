@@ -1,0 +1,34 @@
+# ==============================================================================
+# Cloudflare Workers Static Assets Ignore — Rinconada Stereo
+# Previene la subida de archivos internos, documentación, git y tooling al borde
+# ==============================================================================
+
+# Control de versiones y metadatos del repositorio
+.git/
+.gitignore
+.gitattributes
+.assetsignore
+.nojekyll
+
+# Herramientas de despliegue y runtime local
+.wrangler/
+wrangler.jsonc
+wrangler.toml
+
+# Entornos de desarrollo, IDEs y SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+package.json
+package-lock.json
+
+# Scripts de verificación y tests de desarrollo
+checks.cjs
+
+# Documentación interna, investigaciones y capturas
+*.md
+research/
+screenshots/
