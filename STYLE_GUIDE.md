@@ -53,14 +53,15 @@ No introducir otro color saturado en la V1. El texto blanco sobre azul de marca 
 
 ### 2. Mini-reproductor Flotante Persistente (*Sticky Bottom Player*)
 - Barra fija al fondo de la pantalla (`position: fixed; bottom: 0; left: 0; right: 0; z-index: 900`).
-- Aparece automáticamente mediante `IntersectionObserver` únicamente cuando el reproductor principal `#reproductor` ha salido del viewport.
-- Altura contenida (aprox. 64–72 px), con fondo desenfocado (`backdrop-filter: blur(12px)`), borde superior y acolchado de seguridad móvil (`env(safe-area-inset-bottom)`).
+- Aparece suavemente al hacer scroll cuando los controles superiores del `#reproductor` salen del viewport, y desaparece de inmediato al volver a la zona de escucha.
+- Altura ultra-compacta y elegante (aprox. 54–60 px), con fondo desenfocado (`backdrop-filter: blur(14px)`), borde superior con luz suave y acolchado de seguridad móvil (`env(safe-area-inset-bottom)`).
 - Componentes esenciales:
   - Botón Play/Pause accesible y sincronizado en tiempo real con el reproductor principal.
-  - Indicador de señal en directo ("EN DIRECTO") y título de la canción sonando con scroll/elipsis.
-  - Control de volumen compacto (botón mute y/o slider mini).
-  - Acceso directo a dedicatoria por WhatsApp con el tema actual.
-  - Botón de retorno al reproductor principal («↑»).
+  - Indicador de estado sincronizado: azul sutil en reposo/pausa, verde esmeralda con pulso en vivo (`● En directo`) durante la reproducción, amarillo en conexión y rojo únicamente ante fallos de red reales (eliminando falsas impresiones de fallo de carga).
+  - Título de la canción sonando con tipografía nítida y elipsis.
+  - Control de volumen compacto (botón mute y mini-slider sincronizados bidireccionalmente con el reproductor principal y `localStorage`).
+  - Acceso directo a dedicatoria por WhatsApp con el tema actual pre-rellenado.
+  - Botón de retorno al reproductor principal («↑») con desplazamiento suave asistido.
 
 ### 3. Temporizador de Apagado (*Sleep Timer*)
 - Selector de cuenta regresiva integrado con opciones estándar (15, 30, 45, 60 minutos y desactivar).

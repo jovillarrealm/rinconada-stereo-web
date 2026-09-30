@@ -536,7 +536,7 @@
       </div>
     </footer>
 
-    <!-- MINI-REPRODUCTOR FLOTANTE PERSISTENTE (STICKY BOTTOM PLAYER) -->
+    <!-- MINI-REPRODUCTOR FLOTANTE PERSISTENTE (STICKY BOTTOM PLAYER COMPACTO) -->
     <aside class="sticky-player" id="sticky-player" role="region" aria-label="Reproductor flotante" aria-hidden="true">
       <div class="sticky-player-inner">
         <div class="sticky-player-left">
@@ -551,35 +551,46 @@
           </button>
           <div class="sticky-track-info">
             <div class="sticky-badge-row">
-              <span class="sticky-live-dot" aria-hidden="true"></span>
+              <span class="sticky-status-tag" id="sticky-status-tag">
+                <span class="sticky-status-dot" aria-hidden="true"></span>
+                <span class="sticky-status-label" id="sticky-status-label">Señal en directo</span>
+              </span>
               <span class="sticky-station-name">Rinconada Stereo</span>
-              <span class="sticky-live-tag">EN DIRECTO</span>
             </div>
-            <p class="sticky-track-title" id="sticky-track-title">Sintonizando señal…</p>
+            <p class="sticky-track-title" id="sticky-track-title" title="Rinconada Stereo — Emisora en vivo">Rinconada Stereo · En vivo desde La Pacha</p>
           </div>
         </div>
 
         <div class="sticky-player-right">
-          <a class="sticky-wa-btn" id="sticky-wa-btn" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer" title="Dedicar o pedir tema en cabina por WhatsApp" aria-label="Dedicar tema por WhatsApp">
+          <a class="sticky-wa-btn" id="sticky-wa-btn" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer" title="Pedir tema o mandar saludo por WhatsApp" aria-label="Pedir tema por WhatsApp">
             <span class="sticky-wa-icon" aria-hidden="true">💬</span>
-            <span class="sticky-wa-text">Dedicar</span>
+            <span class="sticky-wa-text">Pedir tema</span>
             <span class="sr-only">(se abre en una pestaña nueva)</span>
           </a>
-          <button class="sticky-mute-btn" id="sticky-mute-btn" type="button" aria-label="Silenciar sonido" title="Silenciar sonido">
-            <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-            </svg>
-            <svg class="icon-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-              <line x1="23" y1="9" x2="17" y2="15"></line>
-              <line x1="17" y1="9" x2="23" y2="15"></line>
+
+          <!-- CONTROL DE VOLUMEN COMPACTO -->
+          <div class="sticky-volume-control" title="Control de volumen">
+            <button class="sticky-mute-btn" id="sticky-mute-btn" type="button" aria-label="Silenciar sonido" title="Silenciar sonido">
+              <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              </svg>
+              <svg class="icon-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+              </svg>
+            </button>
+            <label for="sticky-volume-slider" class="sr-only">Volumen mini reproductor</label>
+            <input type="range" class="sticky-volume-slider" id="sticky-volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Volumen mini reproductor" title="Volumen mini reproductor">
+          </div>
+
+          <button class="sticky-top-btn" id="sticky-top-btn" type="button" aria-label="Volver al reproductor principal" title="Volver al reproductor principal">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 15l-6-6-6 6"></path>
             </svg>
           </button>
-          <a class="sticky-top-anchor" href="#reproductor" id="sticky-top-btn" aria-label="Volver al reproductor principal" title="Volver al reproductor principal">
-            <span aria-hidden="true">↑</span>
-          </a>
         </div>
       </div>
     </aside>

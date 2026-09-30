@@ -105,12 +105,24 @@ const stickyIconPause = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-pause
 const stickyMuteBtn = document.querySelector('#sticky-mute-btn');
 const stickyIconVolOn = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-on') : null;
 const stickyIconVolMute = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-mute') : null;
+const stickyVolumeSlider = document.querySelector('#sticky-volume-slider');
 const stickyTrackTitle = document.querySelector('#sticky-track-title');
+const stickyStatusTag = document.querySelector('#sticky-status-tag');
+const stickyStatusLabel = document.querySelector('#sticky-status-label');
 const stickyWaBtn = document.querySelector('#sticky-wa-btn');
+const stickyTopBtn = document.querySelector('#sticky-top-btn');
 
 // Claves de persistencia de volumen y silencio en localStorage
 const VOL_STORAGE_KEY = 'rinconada_volume';
 const MUTE_STORAGE_KEY = 'rinconada_muted';
+
+function updateStickyStatus(type, label) {
+  if (!stickyStatusTag) return;
+  stickyStatusTag.className = `sticky-status-tag ${type ? 'is-' + type : ''}`;
+  if (stickyStatusLabel) {
+    stickyStatusLabel.textContent = label;
+  }
+}
 
 function updateMuteIcons() {
   if (!audio) return;
@@ -151,6 +163,11 @@ function updateMuteIcons() {
     const volPercent = Math.round(audio.volume * 100);
     volumeSlider.setAttribute('aria-valuenow', isMuted ? 0 : volPercent);
     volumeSlider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : `${volPercent} por ciento`);
+  }
+  if (stickyVolumeSlider) {
+    stickyVolumeSlider.value = isMuted ? 0 : audio.volume;
+    const volPercent = Math.round(audio.volume * 100);
+    stickyVolumeSlider.setAttribute('aria-valuenow', isMuted ? 0 : volPercent);
   }
 }
 
@@ -220,6 +237,7 @@ if (audio && playBtn) {
     }
     isAutoRetrying = false;
     updatePlayPauseIcons(false);
+    updateStickyStatus('error', 'Error al conectar');
     if (status) {
       status.textContent = 'Error al conectar';
       status.className = 'stream-status-tag is-error';
@@ -283,11 +301,30 @@ if (audio && playBtn) {
     });
   }
 
-  // Control de volumen con guardado persistente
+  // Control de volumen principal con guardado persistente y sincronización bidireccional
   if (volumeSlider) {
     volumeSlider.addEventListener('input', () => {
       audio.volume = parseFloat(volumeSlider.value);
       audio.muted = (audio.volume === 0);
+      if (stickyVolumeSlider) {
+        stickyVolumeSlider.value = audio.muted ? 0 : audio.volume;
+      }
+      try {
+        localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
+        localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+      } catch (e) {}
+      updateMuteIcons();
+    });
+  }
+
+  // Control de volumen compacto en sticky player
+  if (stickyVolumeSlider) {
+    stickyVolumeSlider.addEventListener('input', () => {
+      audio.volume = parseFloat(stickyVolumeSlider.value);
+      audio.muted = (audio.volume === 0);
+      if (volumeSlider) {
+        volumeSlider.value = audio.volume;
+      }
       try {
         localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
         localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
@@ -302,6 +339,7 @@ if (audio && playBtn) {
       if (!audio.muted && audio.volume === 0) {
         audio.volume = 0.5;
         if (volumeSlider) volumeSlider.value = 0.5;
+        if (stickyVolumeSlider) stickyVolumeSlider.value = 0.5;
       }
       try {
         localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
@@ -318,16 +356,34 @@ if (audio && playBtn) {
     });
   }
 
-  // IntersectionObserver y scroll listener para activar/desactivar el Sticky Bottom Player
+  // Botón para volver al reproductor principal con desplazamiento suave
   const playerCardEl = document.querySelector('#reproductor');
+  if (stickyTopBtn && playerCardEl) {
+    stickyTopBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const cardRect = playerCardEl.getBoundingClientRect();
+      const targetY = Math.max(0, window.pageYOffset + cardRect.top - 80);
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+      if (playBtn) {
+        setTimeout(() => playBtn.focus(), 350);
+      }
+    });
+  }
+
+  // IntersectionObserver y scroll listener para activar/desactivar el Sticky Bottom Player
   if (stickyPlayer && playerCardEl) {
     const updateStickyVisibility = () => {
       const rect = playerCardEl.getBoundingClientRect();
-      // Si el borde inferior del reproductor sale del viewport por arriba y se ha hecho suficiente scroll
-      if (rect.bottom < 80 && window.scrollY > 200) {
+      // El reproductor principal sale de vista en la zona superior cuando rect.top < -100
+      // o rect.bottom < 180, siempre que se haya hecho un scroll representativo (> 280px)
+      const isPastControls = (rect.top < -100);
+      const isPastCard = (rect.bottom < 200);
+      const isScrolledDown = window.scrollY > 280;
+
+      if ((isPastControls || isPastCard) && isScrolledDown) {
         stickyPlayer.classList.add('is-visible');
         stickyPlayer.removeAttribute('aria-hidden');
-      } else {
+      } else if (rect.top >= -60 || window.scrollY < 180) {
         stickyPlayer.classList.remove('is-visible');
         stickyPlayer.setAttribute('aria-hidden', 'true');
       }
@@ -336,15 +392,16 @@ if (audio && playBtn) {
     if ('IntersectionObserver' in window) {
       const stickyObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
-          if (!entry.isIntersecting && window.scrollY > 200) {
+          const rect = entry.boundingClientRect;
+          if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 250) {
             stickyPlayer.classList.add('is-visible');
             stickyPlayer.removeAttribute('aria-hidden');
-          } else if (entry.isIntersecting) {
+          } else if (entry.isIntersecting && rect.top > -60) {
             stickyPlayer.classList.remove('is-visible');
             stickyPlayer.setAttribute('aria-hidden', 'true');
           }
         });
-      }, { threshold: 0.05 });
+      }, { threshold: 0.1 });
       stickyObserver.observe(playerCardEl);
     }
 
@@ -354,12 +411,14 @@ if (audio && playBtn) {
 
   audio.addEventListener('play', () => {
     updatePlayPauseIcons(true);
+    updateStickyStatus('connecting', 'Conectando…');
   });
 
   audio.addEventListener('playing', () => {
     isAutoRetrying = false;
     lastRetryTimestamp = 0;
     updatePlayPauseIcons(true);
+    updateStickyStatus('playing', 'En directo');
     if (status) {
       status.textContent = 'Conectado · Señal en directo';
       status.className = 'stream-status-tag is-playing';
@@ -371,6 +430,7 @@ if (audio && playBtn) {
   });
 
   audio.addEventListener('waiting', () => {
+    updateStickyStatus('connecting', 'Conectando…');
     if (status) {
       status.textContent = 'Conectando con la señal…';
       status.className = 'stream-status-tag is-connecting';
@@ -380,10 +440,12 @@ if (audio && playBtn) {
   audio.addEventListener('pause', () => {
     if (isAutoRetrying) return;
     updatePlayPauseIcons(false);
+    updateStickyStatus('paused', 'En pausa');
     if (status) {
       if (!navigator.onLine || wasPlayingBeforeOffline) {
         status.textContent = 'Sin conexión a internet';
         status.className = 'stream-status-tag is-error';
+        updateStickyStatus('error', 'Sin internet');
       } else {
         status.textContent = 'Señal en pausa';
         status.className = 'stream-status-tag';

@@ -1,5 +1,5 @@
 // Service Worker — Rinconada Stereo (Carga instantánea 0 ms y modo sin conexión)
-const CACHE_NAME = 'rinconada-stereo-v3';
+const CACHE_NAME = 'rinconada-stereo-v4';
 
 // Recursos estáticos esenciales para el cascarón de la aplicación (App Shell)
 const PRECACHE_ASSETS = [
