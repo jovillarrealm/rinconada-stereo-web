@@ -1,0 +1,52 @@
+# ==============================================================================
+# Cloudflare Pages Headers Configuration — Rinconada Stereo
+# Directivas de seguridad, Early Hints (103) y política de caché para baja latencia
+# ==============================================================================
+
+# 1. Reglas globales de seguridad y Early Hints para el documento principal
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'sha256-0aUJUYOhhM/vaekn9gpZ6JIdb61dQ0OdZ4f+9RNrn5U=' 'sha256-OtYfD7mQNMRCg9tP97llYcEwDPTqrbM39fu7eqQ+rbk=' 'sha256-GZhsIs7bFwYpQ5TF9X6f5MJwBydZOZ+/ljniCzL2yIM=' 'sha256-oAtQi7PaYMOKMIVeJKW6A0ro5vr/U5haDHm5LBWKKQ8=' 'sha256-OtVL/Xho+9n62wPijPGHUx2s4xeezRXVrZgICRlXl5E=' 'sha256-lDY3Fx2t4Ymxw2dDxUDJmzX/zznVLmY0ySNzisBNukI=' https://play14.tikast.com:22012; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; media-src 'self' https://play14.tikast.com:22012 blob:; connect-src 'self' https://api.open-meteo.com https://play14.tikast.com:22012; frame-src 'self' https://www3.cbox.ws https://virtualtronics.com; font-src 'self'; manifest-src 'self'; worker-src 'self';
+  X-Robots-Tag: all
+
+# 2. Early Hints (103 Early Hints) para acelerar la carga en redes móviles lentas
+/
+  Link: </styles.css>; rel=preload; as=style
+  Link: </app.js>; rel=preload; as=script
+  Link: </assets/logo-rinconada.avif>; rel=preload; as=image
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Link: </styles.css>; rel=preload; as=style
+  Link: </app.js>; rel=preload; as=script
+  Link: </assets/logo-rinconada.avif>; rel=preload; as=image
+  Cache-Control: public, max-age=0, must-revalidate
+
+/404.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 3. Service Worker y Manifiesto PWA: Revalidación inmediata
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/javascript; charset=utf-8
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/manifest+json; charset=utf-8
+
+# 4. Activos inmutables: Caché agresiva de 1 año (Ahorro del 100% de datos en visitas recurrentes)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/favicon.ico
+  Cache-Control: public, max-age=31536000, immutable
+
+/styles.css
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/app.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

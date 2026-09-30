@@ -1,14 +1,53 @@
 // ==========================================================================
 // RINCONADA STEREO — WEB APP
-// Emisora comunitaria en línea desde La Pacha, Magdalena, Colombia
+// Radio en línea desde La Pacha, Magdalena, Colombia · Un encuentro con tu región
 // Arquitectura modular sin dependencias (Vanilla JS, 0 runtime overhead)
 // Optimizado para conexiones móviles lentas (2G/3G), bajo consumo y resiliencia
 // ==========================================================================
 
+/**
+ * @typedef {'light' | 'dark'} ThemeName
+ *
+ * @typedef {Object} StorageGateway
+ * @property {function(string, (string|null)=): (string|null)} get - Obtiene un valor de forma segura
+ * @property {function(string, (string|number|boolean)): boolean} set - Almacena un valor serializado
+ * @property {function(string): boolean} remove - Elimina una clave de forma segura
+ *
+ * @typedef {Object} StorageAdapterType
+ * @property {StorageGateway} local
+ * @property {StorageGateway} session
+ *
+ * @typedef {Object} RecentTrack
+ * @property {string} title - Título de la pista musical
+ * @property {string} time - Hora formateada del registro
+ *
+ * @typedef {Object} WeatherCondition
+ * @property {string} desc - Descripción textual del estado meteorológico
+ * @property {string} icon - Cadena de marcado SVG del icono correspondiente
+ *
+ * @typedef {Object} WeatherCachedPayload
+ * @property {number} timestamp - Epoch en milisegundos de la captura
+ * @property {number} temp - Temperatura en grados Celsius
+ * @property {string} desc - Descripción meteorológica
+ * @property {string} icon - SVG del icono meteorológico
+ * @property {number} humidity - Porcentaje de humedad relativa
+ * @property {number} wind - Velocidad del viento en km/h
+ *
+ * @typedef {Object} LiveMetadataPayload
+ * @property {string} [songtitle] - Título emitido por el encoder Shoutcast
+ */
+
 // --- 1. MÓDULO DE ALMACENAMIENTO SEGURO (StorageAdapter) ---
+/** @type {StorageAdapterType} */
 const StorageAdapter = {
   local: {
+    /**
+     * @param {string} key
+     * @param {string|null} [fallback=null]
+     * @returns {string|null}
+     */
     get(key, fallback = null) {
+      if (typeof key !== 'string' || !key) return fallback;
       try {
         const val = localStorage.getItem(key);
         return val !== null ? val : fallback;
@@ -16,7 +55,13 @@ const StorageAdapter = {
         return fallback;
       }
     },
+    /**
+     * @param {string} key
+     * @param {string|number|boolean} val
+     * @returns {boolean}
+     */
     set(key, val) {
+      if (typeof key !== 'string' || !key || val === undefined) return false;
       try {
         localStorage.setItem(key, String(val));
         return true;
@@ -24,7 +69,12 @@ const StorageAdapter = {
         return false;
       }
     },
+    /**
+     * @param {string} key
+     * @returns {boolean}
+     */
     remove(key) {
+      if (typeof key !== 'string' || !key) return false;
       try {
         localStorage.removeItem(key);
         return true;
@@ -34,7 +84,13 @@ const StorageAdapter = {
     }
   },
   session: {
+    /**
+     * @param {string} key
+     * @param {string|null} [fallback=null]
+     * @returns {string|null}
+     */
     get(key, fallback = null) {
+      if (typeof key !== 'string' || !key) return fallback;
       try {
         const val = sessionStorage.getItem(key);
         return val !== null ? val : fallback;
@@ -42,7 +98,13 @@ const StorageAdapter = {
         return fallback;
       }
     },
+    /**
+     * @param {string} key
+     * @param {string|number|boolean} val
+     * @returns {boolean}
+     */
     set(key, val) {
+      if (typeof key !== 'string' || !key || val === undefined) return false;
       try {
         sessionStorage.setItem(key, String(val));
         return true;
@@ -50,7 +112,12 @@ const StorageAdapter = {
         return false;
       }
     },
+    /**
+     * @param {string} key
+     * @returns {boolean}
+     */
     remove(key) {
+      if (typeof key !== 'string' || !key) return false;
       try {
         sessionStorage.removeItem(key);
         return true;
@@ -858,6 +925,10 @@ try {
   }
 } catch (e) {}
 
+/**
+ * Renderiza la lista visual de pistas reproducidas recientemente.
+ * @returns {void}
+ */
 function renderRecentTracks() {
   if (!recentTracksList) return;
   if (!recentTracks || recentTracks.length === 0) {
@@ -881,6 +952,11 @@ function renderRecentTracks() {
   }));
 }
 
+/**
+ * Agrega una pista al historial de sesión (máximo 5 registros).
+ * @param {string} title - Título de la pista recibida
+ * @returns {void}
+ */
 function addRecentTrack(title) {
   if (!title || typeof title !== 'string') return;
   const lower = title.toLowerCase();
@@ -918,6 +994,11 @@ let metaPollInterval = null;
 let pendingMetaScript = null;
 let metaTimeoutId = null;
 
+/**
+ * Actualiza el título y metadatos en vivo en UI, MediaSession y enlaces de dedicatoria.
+ * @param {string} rawTitle - Título crudo emitido por el streaming
+ * @returns {void}
+ */
 function updateNowPlaying(rawTitle) {
   if (typeof rawTitle !== 'string') return;
   const cleaned = rawTitle.trim();
@@ -1119,6 +1200,11 @@ const weatherCard = document.querySelector('#weather-card');
 const WEATHER_CACHE_KEY = 'rinconada_weather_cache';
 const WEATHER_CACHE_TTL = 30 * 60 * 1000; // 30 minutos de validez en caché de sesión
 
+/**
+ * Traduce el código meteorológico WMO de Open-Meteo a texto e icono SVG.
+ * @param {number} code - Código WMO numérico
+ * @returns {WeatherCondition}
+ */
 function getWeatherInterpretation(code) {
   if (code === 0) {
     return {
@@ -1153,6 +1239,15 @@ function getWeatherInterpretation(code) {
   }
 }
 
+/**
+ * Renderiza el bloque HTML del pronóstico meteorológico regional.
+ * @param {number|string} temp - Temperatura en grados Celsius
+ * @param {string} desc - Descripción de la condición
+ * @param {string} icon - Cadena SVG del icono
+ * @param {number|string} humidity - Porcentaje de humedad
+ * @param {number|string} wind - Velocidad del viento
+ * @returns {void}
+ */
 function renderWeatherHTML(temp, desc, icon, humidity, wind) {
   if (!weatherCard) return;
   weatherCard.innerHTML = `
@@ -1270,6 +1365,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
   if (!ctx) return;
 
   const reducedMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+  const isDataSaver = NetworkMonitor.isSaveDataEnabled();
   // Limitar DPR a 2 para evitar saturación de memoria y calor en pantallas móviles 3x/4x
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -1277,11 +1373,12 @@ if (weatherSection && 'IntersectionObserver' in window) {
   let height = 0;
   let animationId = null;
   let isRunning = false;
+  let burstTimer = null;
   let isDarkTheme = ThemeManager.isDark();
 
   ThemeManager.subscribe((theme) => {
     isDarkTheme = (theme === 'dark');
-    if (reducedMotion && isPondInView) render();
+    if ((reducedMotion || isDataSaver) && isPondInView) render();
   });
 
   const fishCount = 14;
@@ -1664,6 +1761,23 @@ if (weatherSection && 'IntersectionObserver' in window) {
     lastFrameTime = 0;
   }
 
+  function triggerBurst(durationMs = 2600) {
+    if (reducedMotion) {
+      render();
+      return;
+    }
+    if (isDataSaver) {
+      start();
+      if (burstTimer) clearTimeout(burstTimer);
+      burstTimer = setTimeout(() => {
+        burstTimer = null;
+        if (isDataSaver && !reducedMotion) {
+          stop();
+        }
+      }, durationMs);
+    }
+  }
+
   canvas.addEventListener('pointermove', (e) => {
     const rect = canvas.getBoundingClientRect();
     pointer.x = e.clientX - rect.left;
@@ -1680,6 +1794,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     pointer.active = true;
     dropFood(px, py);
     if (reducedMotion) render();
+    else if (isDataSaver) triggerBurst();
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -1696,19 +1811,21 @@ if (weatherSection && 'IntersectionObserver' in window) {
       pointer.active = true;
       dropFood(rx, ry);
       if (reducedMotion) render();
+      else if (isDataSaver) triggerBurst();
     }
   });
 
   window.addEventListener('resize', () => {
     if (!initialized) return;
     resize();
-    if (reducedMotion) render();
+    if (reducedMotion || isDataSaver) render();
   });
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stop();
-    } else if (isPondInView && !reducedMotion) {
+      if (burstTimer) clearTimeout(burstTimer);
+    } else if (isPondInView && !reducedMotion && !isDataSaver) {
       start();
     }
   });
@@ -1719,7 +1836,7 @@ if (weatherSection && 'IntersectionObserver' in window) {
     initialized = true;
     resize();
     initFish();
-    if (reducedMotion) render();
+    if (reducedMotion || isDataSaver) render();
   }
 
   if ('IntersectionObserver' in window) {
@@ -1727,16 +1844,17 @@ if (weatherSection && 'IntersectionObserver' in window) {
       isPondInView = entries.some(e => e.isIntersecting);
       if (isPondInView) {
         ensurePondReady();
-        if (!reducedMotion && !document.hidden) start();
+        if (!reducedMotion && !isDataSaver && !document.hidden) start();
       } else {
         stop();
+        if (burstTimer) clearTimeout(burstTimer);
       }
     }, { rootMargin: '150px', threshold: 0.02 });
     pondObserver.observe(canvas);
   } else {
     isPondInView = true;
     ensurePondReady();
-    if (!reducedMotion && !document.hidden) start();
+    if (!reducedMotion && !isDataSaver && !document.hidden) start();
   }
 })();
 

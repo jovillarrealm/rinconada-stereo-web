@@ -2,6 +2,8 @@
 
 Stack: HTML, CSS y JavaScript nativo. No requiere npm, compilación ni servidor de aplicación. La portada y la escucha viven en una sola página; las secciones se enlazan con anclas.
 
+> **Identidad de marca:** Rinconada Stereo es una **radio en línea / emisora en directo**, hecha de la comunidad para la comunidad desde La Pacha, Magdalena. Música de acordeón, memoria viva y encuentro con nuestra región. No es una emisora comunitaria bajo concesión FM. Ver [STYLE_GUIDE.md](STYLE_GUIDE.md).
+
 ## Ver localmente
 
 Abrir `index.html` directamente o servir esta carpeta con cualquier servidor HTTP local. El control de audio usa una URL HTTPS de la señal detectada en el reproductor actual. El reproductor alternativo carga el proveedor original al abrir el detalle.

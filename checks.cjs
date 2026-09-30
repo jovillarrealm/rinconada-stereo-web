@@ -127,7 +127,7 @@ async function checkApp(stored) {
 async function checkWorker() {
   const scope = 'https://example.test/rinconada/';
   const prefix = `rinconada-stereo:${scope}:`;
-  const cacheName = `${prefix}v5`;
+  const cacheName = `${prefix}v6`;
   const entries = new Map();
   const deleted = [];
   const handlers = {};
@@ -152,17 +152,18 @@ async function checkWorker() {
     },
     caches: {
       open: async name => { assert.equal(name, cacheName); return cache; },
-      keys: async () => [`${prefix}v4`, cacheName, 'other-site', 'rinconada-stereo:https://example.test/other/:v4'],
+      keys: async () => [`${prefix}v5`, cacheName, 'other-site', 'rinconada-stereo:https://example.test/other/:v4'],
       delete: async name => { deleted.push(name); return true; }
     },
     fetch: req => fetchImpl(req), URL, Response, console
   });
   vm.runInContext(source('sw.js'), context);
 
-  // Verify PRECACHE_ASSETS contains essential shell and no redundant PNG variants
+  // Verify PRECACHE_ASSETS contains essential shell, 404 and no redundant PNG variants
   const precache = vm.runInContext('PRECACHE_ASSETS', context);
   assert.ok(Array.isArray(precache));
   assert.ok(precache.includes('index.html'));
+  assert.ok(precache.includes('404.html'), 'PRECACHE_ASSETS must include 404.html for offline resilience');
   assert.ok(precache.includes('app.js'));
   assert.ok(!precache.includes('assets/locupez.png'), 'sw.js should avoid precaching bulky redundant PNG variants');
 
@@ -178,7 +179,7 @@ async function checkWorker() {
   await lifecycle('install');
   assert.equal(skipped, 1);
   await lifecycle('activate');
-  assert.deepEqual(deleted, [`${prefix}v4`]);
+  assert.deepEqual(deleted, [`${prefix}v5`]);
 
   async function request(url, mode = 'navigate', destination = '') {
     const pending = [];
@@ -215,18 +216,68 @@ function checkAssetsAndStyles() {
   const html = source('index.html');
   assert.ok(!/<link[^>]+sizes=["'](?:512x512|192x192)["'][^>]*>/i.test(html),
     'index.html should not include heavy 192x192 or 512x512 icons in head');
+  assert.ok(html.includes('sha256-0aUJUYOhhM/vaekn9gpZ6JIdb61dQ0OdZ4f+9RNrn5U='),
+    'index.html CSP must include HTML5 LF hash for theme script');
+
+  const page404 = source('404.html');
+  assert.ok(page404.includes('srcset="assets/logo-rinconada.avif"'), '404.html must provide AVIF logo source');
+  assert.ok(page404.includes('srcset="assets/locupez.avif"'), '404.html must provide AVIF mascot source');
 
   const manifest = JSON.parse(source('manifest.webmanifest'));
   assert.ok(manifest.icons.some(i => i.sizes === '192x192'), 'manifest.webmanifest must preserve 192x192 icon');
   assert.ok(manifest.icons.some(i => i.sizes === '512x512'), 'manifest.webmanifest must preserve 512x512 icon');
 }
 
+function checkCloudflareConfigs() {
+  const headers = source('_headers');
+  assert.ok(headers.includes('/assets/*'), '_headers must define cache policy for /assets/*');
+  assert.ok(headers.includes('max-age=31536000, immutable'), '_headers must use 1-year immutable cache for static assets');
+  assert.ok(headers.includes('/sw.js'), '_headers must define cache policy for /sw.js');
+  assert.ok(headers.includes('max-age=0, must-revalidate'), '_headers must require immediate revalidation for sw.js');
+  assert.ok(headers.includes('/404.html'), '_headers must define cache policy for /404.html');
+  assert.ok(headers.includes('X-Content-Type-Options: nosniff'), '_headers must include nosniff security header');
+  assert.ok(headers.includes('X-Frame-Options: SAMEORIGIN'), '_headers must protect against clickjacking');
+  assert.ok(headers.includes('Strict-Transport-Security: max-age=31536000'), '_headers must include HSTS');
+  assert.ok(headers.includes('Content-Security-Policy: default-src \'self\''), '_headers must include CSP');
+  assert.ok(headers.includes('sha256-0aUJUYOhhM/vaekn9gpZ6JIdb61dQ0OdZ4f+9RNrn5U='),
+    '_headers CSP must include HTML5 LF hash for theme script');
+  assert.ok(headers.includes('Link: </styles.css>; rel=preload; as=style'), '_headers must configure 103 Early Hints for styles.css');
+  assert.ok(headers.includes('Link: </app.js>; rel=preload; as=script'), '_headers must configure 103 Early Hints for app.js');
+
+  const redirects = source('_redirects');
+  assert.ok(/\/escuchanos-en-vivo\s+\/\s+301/.test(redirects), '_redirects must redirect /escuchanos-en-vivo to /');
+  assert.ok(/\/en-vivo\s+\/\s+301/.test(redirects), '_redirects must redirect /en-vivo to /');
+  assert.ok(/\/streaming\s+\/\s+301/.test(redirects), '_redirects must redirect /streaming to /');
+  assert.ok(/\/radio\s+\/\s+301/.test(redirects), '_redirects must redirect /radio to /');
+}
+
+function checkInstitutionalIdentity() {
+  const filesToCheck = ['app.js', 'index.html', 'llms.txt', 'sw.js', 'manifest.webmanifest', '404.html'];
+  const bannedPattern = /\bcomunitari[ao]s?\b/i;
+
+  for (const file of filesToCheck) {
+    const content = source(file);
+    const match = content.match(bannedPattern);
+    assert.ok(!match, `File ${file} contains prohibited term '${match ? match[0] : ''}'. Institutional identity rule: Rinconada Stereo is an online radio station, not a 'comunitaria'.`);
+  }
+
+  const marketingBannedPattern = /inter[eé]s\s+social/i;
+  for (const file of ['app.js', 'index.html', '404.html', 'sw.js']) {
+    const content = source(file);
+    const match = content.match(marketingBannedPattern);
+    assert.ok(!match, `File ${file} contains bureaucratic marketing phrase '${match ? match[0] : ''}'. Marketing rule: Show, don't tell.`);
+  }
+}
+
 (async () => {
+  checkCloudflareConfigs();
+  checkInstitutionalIdentity();
   checkAssetsAndStyles();
   for (const stored of [null, '{bad json', 'null', '{}', '[null,{"title":42}]',
     JSON.stringify(Array.from({ length: 8 }, (_, i) => ({ title: `Track ${i}`, time: '12:00' })))]) {
     await checkApp(stored);
   }
   await checkWorker();
-  console.log('PASS: safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, and low-bandwidth icon hygiene.');
+  console.log('PASS: Cloudflare headers & redirects, institutional identity compliance, safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, and low-bandwidth icon hygiene.');
 })().catch(err => { console.error(err); process.exitCode = 1; });
+

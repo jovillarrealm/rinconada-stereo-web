@@ -2,9 +2,16 @@
 
 Estado: guía operativa para la V1, 23 de septiembre de 2026. Dirección: **Señal del territorio**. Prioridad: carga rápida, después fuerza visual. Basada en el logo blanco adjunto, el azul de la web actual y la maqueta estática. Se aplica al sitio y al marco que rodea el nuevo Cbox; la apariencia interna del chat se configura en Cbox según lo que permita Free.
 
-## Carácter
+## Carácter e Identidad Institucional
 
 La página debe sentirse como una radio cercana y actual: clara, cálida, legible, con la señal al frente y referencias sobrias al territorio. Usar una composición editorial de aire amplio, títulos expresivos y pocos elementos fuertes. Evitar fondos fotográficos genéricos, ondas animadas permanentes, tarjetas decorativas repetidas y efectos que retrasen el primer render.
+
+### Política de Identidad y Terminología (Regla del Proyecto)
+- **Definición oficial:** Rinconada Stereo es una **radio en línea / emisora en directo**, hecha *de la comunidad para la comunidad*, que celebra la música de acordeón, la memoria viva y la cultura ribereña desde La Pacha, Magdalena.
+- **Regla estricta:** **NO es una «emisora comunitaria»**. En Colombia, la denominación «emisora comunitaria» corresponde a una figura jurídica y concesión de radiodifusión sonora en frecuencia modulada (FM) otorgada por el Ministerio de Tecnologías de la Información y las Comunicaciones (MinTIC), categoría que no aplica a esta estación digital.
+- **Principio de Marketing («Show, don't tell»):** Evitar rótulos institucionales o burocráticos como «de interés social». El valor y la vocación comunitaria se demuestran a través de la cercanía con la gente, los saludos a los corregimientos, la música autóctona y el encuentro con el territorio ribereño.
+- **Términos aprobados:** «Radio en línea», «emisora en vivo», «señal digital», «encuentro con tu región», «la voz de la ciénaga», «música y encuentro».
+- **Términos prohibidos:** «Emisora comunitaria», «radio comunitaria», «de interés social» (como descriptor o eslogan). Queda terminantemente prohibido su uso en el código, comentarios, metadatos, textos o material gráfico.
 
 ## Tokens visuales
 

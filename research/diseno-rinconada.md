@@ -8,7 +8,7 @@ Investigación al 23 de septiembre de 2026. La propuesta parte de lo confirmado 
 
 - [NTS](https://www.nts.live/) da prioridad al estado **Live now**, muestra lo siguiente en la programación y ofrece **Join the Chat** en la navegación. Enseña que escuchar y participar pueden ser acciones de primer nivel, visibles desde el inicio.
 - [KEXP](https://www.kexp.org/) mantiene **Listen Live** como acción persistente junto a navegación de contenidos, programación y locutores. La presencia de contenidos alrededor del directo no desplaza al audio.
-- [The Lot Radio](https://www.thelotradio.com/) abre con controles de reproducción y la programación del día; la página combina señal, agenda e identidad comunitaria. Su patrón de «hoy al aire» sirve mejor a Rinconada que un top de canciones estático.
+- [The Lot Radio](https://www.thelotradio.com/) abre con controles de reproducción y la programación del día; la página combina señal, agenda e identidad local y cultural. Su patrón de «hoy al aire» sirve mejor a Rinconada que un top de canciones estático.
 - [dublab](https://www.dublab.com/) enuncia en su portada la combinación de directo, programación, archivo, DJs y proyectos. Solo tomar la claridad de la arquitectura: Rinconada puede empezar con menos secciones.
 
 ## Tres direcciones para el diseño

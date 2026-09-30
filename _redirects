@@ -1,0 +1,10 @@
+# ==============================================================================
+# Cloudflare Pages Redirects — Rinconada Stereo
+# Redirecciones HTTP 301 en el borde Anycast sin consumo de CPU en el navegador
+# ==============================================================================
+
+/escuchanos-en-vivo    /    301
+/escuchanos-en-vivo/   /    301
+/en-vivo               /    301
+/streaming             /    301
+/radio                 /    301

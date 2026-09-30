@@ -60,6 +60,8 @@
         --card-border: #d8e3f2;
         --header-bg: linear-gradient(180deg, #0e5ed2 0%, #0a4ea8 100%);
         --header-border: transparent;
+        --lead-color: #3b5270;
+        --footer-color: #475e7a;
       }
       :root[data-theme="dark"] {
         --blue: #4d93f7;
@@ -71,6 +73,8 @@
         --card-border: #1b375b;
         --header-bg: linear-gradient(180deg, #071c35 0%, #051427 100%);
         --header-border: #1c3d66;
+        --lead-color: #c7d8ed;
+        --footer-color: #9cb1cb;
       }
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme="light"]) {
@@ -83,6 +87,8 @@
           --card-border: #1b375b;
           --header-bg: linear-gradient(180deg, #071c35 0%, #051427 100%);
           --header-border: #1c3d66;
+          --lead-color: #c7d8ed;
+          --footer-color: #9cb1cb;
         }
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -239,21 +245,29 @@
       .footer-note {
         margin-top: 1.8rem;
         font-size: 0.88rem;
-        color: var(--lead-color, #647b96);
+        color: var(--footer-color, #475e7a);
       }
     </style>
   </head>
   <body>
     <header class="site-header">
       <a class="header-brand" id="brand-link" href="./" aria-label="Rinconada Stereo, ir a la portada">
-        <img id="logo-img" src="assets/logo-rinconada.png" width="260" height="115" alt="Rinconada Stereo">
+        <picture>
+          <source srcset="assets/logo-rinconada.avif" type="image/avif">
+          <source srcset="assets/logo-rinconada.webp" type="image/webp">
+          <img id="logo-img" src="assets/logo-rinconada.png" width="304" height="145" alt="Rinconada Stereo" style="aspect-ratio: 304 / 145;">
+        </picture>
       </a>
     </header>
 
     <main class="container">
       <div class="card-404">
         <div class="mascot-wrap">
-          <img id="locupez-img" src="assets/locupez.png" width="180" height="180" alt="Locupez, la mascota de Rinconada Stereo" class="mascot-img">
+          <picture>
+            <source srcset="assets/locupez.avif" type="image/avif">
+            <source srcset="assets/locupez.webp" type="image/webp">
+            <img id="locupez-img" src="assets/locupez.png" width="180" height="180" alt="Locupez, la mascota de Rinconada Stereo" class="mascot-img" style="aspect-ratio: 1 / 1;">
+          </picture>
         </div>
 
         <span class="badge-404">Error 404</span>
@@ -278,7 +292,19 @@
       if (basePath !== './') {
         document.getElementById('home-link').href = basePath;
         document.getElementById('brand-link').href = basePath;
+        const logoPic = document.querySelector('.header-brand picture');
+        if (logoPic) {
+          logoPic.querySelectorAll('source').forEach(s => {
+            s.srcset = basePath + s.getAttribute('srcset');
+          });
+        }
         document.getElementById('logo-img').src = basePath + 'assets/logo-rinconada.png';
+        const locupezPic = document.querySelector('.mascot-wrap picture');
+        if (locupezPic) {
+          locupezPic.querySelectorAll('source').forEach(s => {
+            s.srcset = basePath + s.getAttribute('srcset');
+          });
+        }
         document.getElementById('locupez-img').src = basePath + 'assets/locupez.png';
       }
     </script>
