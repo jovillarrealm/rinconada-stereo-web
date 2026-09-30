@@ -175,33 +175,31 @@
             <img src="assets/logo-rinconada.png" width="300" height="133" alt="Rinconada Stereo" fetchpriority="high" decoding="async">
           </picture>
         </a>
-        <div class="header-nav-wrap">
-          <nav aria-label="Principal">
-            <a href="#inicio">Inicio</a>
-            <a href="#blogs">Blogs</a>
-            <a href="#contacto">Contacto</a>
-          </nav>
-          <button class="theme-toggle-btn" id="theme-toggle" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro">
-            <span class="theme-toggle-icon theme-toggle-sun" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
-            </span>
-            <span class="theme-toggle-icon theme-toggle-moon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
-            </span>
-          </button>
-        </div>
+        <nav aria-label="Principal">
+          <a href="#inicio">Inicio</a>
+          <a href="#blogs">Blogs</a>
+          <a href="#contacto">Contacto</a>
+        </nav>
+        <button class="theme-toggle-btn" id="theme-toggle" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro">
+          <span class="theme-toggle-icon theme-toggle-sun" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </span>
+          <span class="theme-toggle-icon theme-toggle-moon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+        </button>
       </div>
     </header>
 
@@ -269,23 +267,66 @@
                   </span>
                   <p class="track-title" id="track-title" title="Cargando información de la transmisión…">Sintonizando señal…</p>
                 </div>
+                <!-- ACCIONES DE TEMA: PEDIR POR WHATSAPP Y RECIBIR RECIENTES -->
+                <div class="track-actions-bar">
+                  <a class="track-share-wa-btn" id="track-share-wa" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer" title="Dedicar o pedir esta canción por WhatsApp" aria-label="Dedicar o pedir esta canción por WhatsApp">
+                    <span class="track-wa-icon" aria-hidden="true">💬</span>
+                    <span class="track-wa-label">Dedicar en cabina</span>
+                    <span class="sr-only">(se abre en una pestaña nueva)</span>
+                  </a>
+                  <button class="recent-tracks-toggle-btn" id="recent-tracks-toggle" type="button" aria-expanded="false" aria-controls="recent-tracks-panel" title="Ver temas que han sonado recientemente">
+                    <span class="recent-icon" aria-hidden="true">🕒</span>
+                    <span class="recent-label">Recién sonadas</span>
+                    <span class="recent-badge" id="recent-badge">0</span>
+                  </button>
+                </div>
+
+                <!-- HISTORIAL DE TEMAS RECIENTES (RECIÉN SONADAS) -->
+                <div class="recent-tracks-panel" id="recent-tracks-panel" hidden aria-label="Historial de temas recientes">
+                  <div class="recent-tracks-panel-header">
+                    <span class="recent-panel-title">Últimas canciones emitidas</span>
+                    <span class="recent-panel-sub">Detectadas en esta sesión</span>
+                  </div>
+                  <ul class="recent-tracks-list" id="recent-tracks-list">
+                    <li class="recent-track-empty">Aún no hay canciones anteriores registradas.</li>
+                  </ul>
+                </div>
               </div>
 
-              <div class="custom-volume-box">
-                <button class="custom-mute-btn" id="mute-btn" type="button" aria-label="Silenciar sonido" aria-pressed="false" title="Silenciar sonido">
-                  <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                  </svg>
-                  <svg class="icon-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                    <line x1="23" y1="9" x2="17" y2="15"></line>
-                    <line x1="17" y1="9" x2="23" y2="15"></line>
-                  </svg>
-                </button>
-                <label for="volume-slider" class="sr-only">Control de volumen</label>
-                <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="90">
+              <!-- CONTROLES INFERIORES: VOLUMEN + TEMPORIZADOR DE APAGADO -->
+              <div class="player-controls-bottom">
+                <div class="custom-volume-box">
+                  <button class="custom-mute-btn" id="mute-btn" type="button" aria-label="Silenciar sonido" aria-pressed="false" title="Silenciar sonido">
+                    <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    <svg class="icon-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                      <line x1="23" y1="9" x2="17" y2="15"></line>
+                      <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                  </button>
+                  <label for="volume-slider" class="sr-only">Control de volumen</label>
+                  <input type="range" class="custom-volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.9" aria-label="Control de volumen" title="Volumen" aria-valuemin="0" aria-valuemax="100" aria-valuenow="90">
+                </div>
+
+                <!-- TEMPORIZADOR DE APAGADO (SLEEP TIMER) -->
+                <div class="sleep-timer-wrap">
+                  <button class="sleep-timer-btn" id="sleep-timer-btn" type="button" aria-label="Temporizador de apagado" title="Temporizador de apagado" aria-expanded="false" aria-haspopup="true">
+                    <span class="sleep-timer-icon" aria-hidden="true">⏱</span>
+                    <span class="sleep-timer-text" id="sleep-timer-text">Dormir</span>
+                  </button>
+                  <div class="sleep-timer-menu" id="sleep-timer-menu" hidden role="menu" aria-label="Opciones de temporizador de apagado">
+                    <div class="sleep-menu-heading">Apagar transmisión en:</div>
+                    <button class="sleep-menu-item" type="button" role="menuitem" data-minutes="15">15 minutos</button>
+                    <button class="sleep-menu-item" type="button" role="menuitem" data-minutes="30">30 minutos</button>
+                    <button class="sleep-menu-item" type="button" role="menuitem" data-minutes="45">45 minutos</button>
+                    <button class="sleep-menu-item" type="button" role="menuitem" data-minutes="60">60 minutos</button>
+                    <button class="sleep-menu-item sleep-menu-cancel" id="sleep-cancel-btn" type="button" role="menuitem" data-minutes="0" disabled>Desactivar temporizador</button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -494,6 +535,54 @@
         </div>
       </div>
     </footer>
+
+    <!-- MINI-REPRODUCTOR FLOTANTE PERSISTENTE (STICKY BOTTOM PLAYER) -->
+    <aside class="sticky-player" id="sticky-player" role="region" aria-label="Reproductor flotante" aria-hidden="true">
+      <div class="sticky-player-inner">
+        <div class="sticky-player-left">
+          <button class="sticky-play-btn" id="sticky-play-btn" type="button" aria-label="Reproducir señal en vivo" title="Reproducir señal en vivo">
+            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <polygon points="6 4 20 12 6 20 6 4"></polygon>
+            </svg>
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display: none;">
+              <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+              <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+            </svg>
+          </button>
+          <div class="sticky-track-info">
+            <div class="sticky-badge-row">
+              <span class="sticky-live-dot" aria-hidden="true"></span>
+              <span class="sticky-station-name">Rinconada Stereo</span>
+              <span class="sticky-live-tag">EN DIRECTO</span>
+            </div>
+            <p class="sticky-track-title" id="sticky-track-title">Sintonizando señal…</p>
+          </div>
+        </div>
+
+        <div class="sticky-player-right">
+          <a class="sticky-wa-btn" id="sticky-wa-btn" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer" title="Dedicar o pedir tema en cabina por WhatsApp" aria-label="Dedicar tema por WhatsApp">
+            <span class="sticky-wa-icon" aria-hidden="true">💬</span>
+            <span class="sticky-wa-text">Dedicar</span>
+            <span class="sr-only">(se abre en una pestaña nueva)</span>
+          </a>
+          <button class="sticky-mute-btn" id="sticky-mute-btn" type="button" aria-label="Silenciar sonido" title="Silenciar sonido">
+            <svg class="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg class="icon-vol-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+          <a class="sticky-top-anchor" href="#reproductor" id="sticky-top-btn" aria-label="Volver al reproductor principal" title="Volver al reproductor principal">
+            <span aria-hidden="true">↑</span>
+          </a>
+        </div>
+      </div>
+    </aside>
   </body>
 </html>
 

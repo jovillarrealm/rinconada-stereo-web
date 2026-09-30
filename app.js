@@ -97,21 +97,56 @@ const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
 const volumeSlider = document.querySelector('#volume-slider');
 const eqBars = document.querySelector('#eq-bars');
 
+// Elementos del Mini-reproductor Flotante Persistente (Sticky Bottom Player)
+const stickyPlayer = document.querySelector('#sticky-player');
+const stickyPlayBtn = document.querySelector('#sticky-play-btn');
+const stickyIconPlay = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-play') : null;
+const stickyIconPause = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-pause') : null;
+const stickyMuteBtn = document.querySelector('#sticky-mute-btn');
+const stickyIconVolOn = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-on') : null;
+const stickyIconVolMute = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-mute') : null;
+const stickyTrackTitle = document.querySelector('#sticky-track-title');
+const stickyWaBtn = document.querySelector('#sticky-wa-btn');
+
+// Claves de persistencia de volumen y silencio en localStorage
+const VOL_STORAGE_KEY = 'rinconada_volume';
+const MUTE_STORAGE_KEY = 'rinconada_muted';
+
 function updateMuteIcons() {
-  if (!iconVolOn || !iconVolMute) return;
+  if (!audio) return;
   const isMuted = audio.muted || audio.volume === 0;
-  if (isMuted) {
-    iconVolOn.style.display = 'none';
-    iconVolMute.style.display = 'block';
-  } else {
-    iconVolOn.style.display = 'block';
-    iconVolMute.style.display = 'none';
+
+  // Iconos reproductor principal
+  if (iconVolOn && iconVolMute) {
+    if (isMuted) {
+      iconVolOn.style.display = 'none';
+      iconVolMute.style.display = 'block';
+    } else {
+      iconVolOn.style.display = 'block';
+      iconVolMute.style.display = 'none';
+    }
   }
   if (muteBtn) {
     muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
     muteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
     muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
   }
+
+  // Iconos sticky player
+  if (stickyIconVolOn && stickyIconVolMute) {
+    if (isMuted) {
+      stickyIconVolOn.style.display = 'none';
+      stickyIconVolMute.style.display = 'block';
+    } else {
+      stickyIconVolOn.style.display = 'block';
+      stickyIconVolMute.style.display = 'none';
+    }
+  }
+  if (stickyMuteBtn) {
+    stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+    stickyMuteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+  }
+
   if (volumeSlider) {
     const volPercent = Math.round(audio.volume * 100);
     volumeSlider.setAttribute('aria-valuenow', isMuted ? 0 : volPercent);
@@ -119,10 +154,48 @@ function updateMuteIcons() {
   }
 }
 
+function updatePlayPauseIcons(isPlaying) {
+  if (iconPlay) iconPlay.style.display = isPlaying ? 'none' : 'block';
+  if (iconPause) iconPause.style.display = isPlaying ? 'block' : 'none';
+  if (playBtn) {
+    playBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+    playBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+  }
+  if (stickyIconPlay) stickyIconPlay.style.display = isPlaying ? 'none' : 'block';
+  if (stickyIconPause) stickyIconPause.style.display = isPlaying ? 'block' : 'none';
+  if (stickyPlayBtn) {
+    stickyPlayBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+    stickyPlayBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+  }
+  if (eqBars) {
+    if (isPlaying) eqBars.classList.add('is-playing');
+    else eqBars.classList.remove('is-playing');
+  }
+}
+
 if (audio && playBtn) {
-  // Inicializar volumen
+  // Inicializar volumen y silencio con memoria persistente de localStorage
   if (volumeSlider) {
-    audio.volume = parseFloat(volumeSlider.value);
+    try {
+      const savedVol = localStorage.getItem(VOL_STORAGE_KEY);
+      const savedMute = localStorage.getItem(MUTE_STORAGE_KEY);
+      if (savedVol !== null) {
+        const parsed = parseFloat(savedVol);
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+          audio.volume = parsed;
+          volumeSlider.value = parsed;
+        } else {
+          audio.volume = parseFloat(volumeSlider.value);
+        }
+      } else {
+        audio.volume = parseFloat(volumeSlider.value);
+      }
+      if (savedMute === 'true') {
+        audio.muted = true;
+      }
+    } catch (e) {
+      audio.volume = parseFloat(volumeSlider.value);
+    }
     updateMuteIcons();
   }
 
@@ -146,13 +219,7 @@ if (audio && playBtn) {
       retryTimeout = null;
     }
     isAutoRetrying = false;
-    if (iconPlay) iconPlay.style.display = 'block';
-    if (iconPause) iconPause.style.display = 'none';
-    if (eqBars) eqBars.classList.remove('is-playing');
-    if (playBtn) {
-      playBtn.setAttribute('aria-label', 'Reproducir señal en vivo');
-      playBtn.setAttribute('title', 'Reproducir señal en vivo');
-    }
+    updatePlayPauseIcons(false);
     if (status) {
       status.textContent = 'Error al conectar';
       status.className = 'stream-status-tag is-error';
@@ -209,10 +276,22 @@ if (audio && playBtn) {
     }
   });
 
+  // Sticky Play Button sincronizado
+  if (stickyPlayBtn) {
+    stickyPlayBtn.addEventListener('click', () => {
+      playBtn.click();
+    });
+  }
+
+  // Control de volumen con guardado persistente
   if (volumeSlider) {
     volumeSlider.addEventListener('input', () => {
       audio.volume = parseFloat(volumeSlider.value);
       audio.muted = (audio.volume === 0);
+      try {
+        localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
+        localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+      } catch (e) {}
       updateMuteIcons();
     });
   }
@@ -224,30 +303,63 @@ if (audio && playBtn) {
         audio.volume = 0.5;
         if (volumeSlider) volumeSlider.value = 0.5;
       }
+      try {
+        localStorage.setItem(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+        localStorage.setItem(VOL_STORAGE_KEY, audio.volume);
+      } catch (e) {}
       updateMuteIcons();
     });
   }
 
-  audio.addEventListener('play', () => {
-    if (iconPlay) iconPlay.style.display = 'none';
-    if (iconPause) iconPause.style.display = 'block';
-    if (eqBars) eqBars.classList.add('is-playing');
-    if (playBtn) {
-      playBtn.setAttribute('aria-label', 'Pausar señal en vivo');
-      playBtn.setAttribute('title', 'Pausar señal en vivo');
+  // Sticky Mute Button sincronizado
+  if (stickyMuteBtn) {
+    stickyMuteBtn.addEventListener('click', () => {
+      if (muteBtn) muteBtn.click();
+    });
+  }
+
+  // IntersectionObserver y scroll listener para activar/desactivar el Sticky Bottom Player
+  const playerCardEl = document.querySelector('#reproductor');
+  if (stickyPlayer && playerCardEl) {
+    const updateStickyVisibility = () => {
+      const rect = playerCardEl.getBoundingClientRect();
+      // Si el borde inferior del reproductor sale del viewport por arriba y se ha hecho suficiente scroll
+      if (rect.bottom < 80 && window.scrollY > 200) {
+        stickyPlayer.classList.add('is-visible');
+        stickyPlayer.removeAttribute('aria-hidden');
+      } else {
+        stickyPlayer.classList.remove('is-visible');
+        stickyPlayer.setAttribute('aria-hidden', 'true');
+      }
+    };
+
+    if ('IntersectionObserver' in window) {
+      const stickyObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting && window.scrollY > 200) {
+            stickyPlayer.classList.add('is-visible');
+            stickyPlayer.removeAttribute('aria-hidden');
+          } else if (entry.isIntersecting) {
+            stickyPlayer.classList.remove('is-visible');
+            stickyPlayer.setAttribute('aria-hidden', 'true');
+          }
+        });
+      }, { threshold: 0.05 });
+      stickyObserver.observe(playerCardEl);
     }
+
+    window.addEventListener('scroll', updateStickyVisibility, { passive: true });
+    window.addEventListener('resize', updateStickyVisibility, { passive: true });
+  }
+
+  audio.addEventListener('play', () => {
+    updatePlayPauseIcons(true);
   });
 
   audio.addEventListener('playing', () => {
     isAutoRetrying = false;
     lastRetryTimestamp = 0;
-    if (iconPlay) iconPlay.style.display = 'none';
-    if (iconPause) iconPause.style.display = 'block';
-    if (eqBars) eqBars.classList.add('is-playing');
-    if (playBtn) {
-      playBtn.setAttribute('aria-label', 'Pausar señal en vivo');
-      playBtn.setAttribute('title', 'Pausar señal en vivo');
-    }
+    updatePlayPauseIcons(true);
     if (status) {
       status.textContent = 'Conectado · Señal en directo';
       status.className = 'stream-status-tag is-playing';
@@ -267,13 +379,7 @@ if (audio && playBtn) {
 
   audio.addEventListener('pause', () => {
     if (isAutoRetrying) return;
-    if (iconPlay) iconPlay.style.display = 'block';
-    if (iconPause) iconPause.style.display = 'none';
-    if (eqBars) eqBars.classList.remove('is-playing');
-    if (playBtn) {
-      playBtn.setAttribute('aria-label', 'Reproducir señal en vivo');
-      playBtn.setAttribute('title', 'Reproducir señal en vivo');
-    }
+    updatePlayPauseIcons(false);
     if (status) {
       if (!navigator.onLine || wasPlayingBeforeOffline) {
         status.textContent = 'Sin conexión a internet';
@@ -444,6 +550,217 @@ if (audio && playBtn) {
   });
 }
 
+// --- TEMPORIZADOR DE APAGADO (SLEEP TIMER) ---
+const sleepTimerBtn = document.querySelector('#sleep-timer-btn');
+const sleepTimerMenu = document.querySelector('#sleep-timer-menu');
+const sleepTimerText = document.querySelector('#sleep-timer-text');
+const sleepCancelBtn = document.querySelector('#sleep-cancel-btn');
+const sleepMenuItems = document.querySelectorAll('.sleep-menu-item[data-minutes]');
+
+let sleepTimerId = null;
+let sleepEndTime = null;
+let originalVolumeBeforeFade = null;
+let isMidFade = false;
+
+function resetSleepTimerUI() {
+  if (sleepTimerText) sleepTimerText.textContent = 'Dormir';
+  if (sleepTimerBtn) {
+    sleepTimerBtn.classList.remove('is-active');
+    sleepTimerBtn.setAttribute('title', 'Temporizador de apagado');
+    sleepTimerBtn.setAttribute('aria-label', 'Temporizador de apagado');
+  }
+  if (sleepCancelBtn) sleepCancelBtn.disabled = true;
+  sleepMenuItems.forEach(item => item.classList.remove('is-selected'));
+}
+
+function cancelSleepTimer() {
+  if (sleepTimerId) {
+    clearInterval(sleepTimerId);
+    sleepTimerId = null;
+  }
+  sleepEndTime = null;
+  if (isMidFade && originalVolumeBeforeFade !== null && audio) {
+    audio.volume = originalVolumeBeforeFade;
+    if (volumeSlider) volumeSlider.value = originalVolumeBeforeFade;
+    updateMuteIcons();
+  }
+  isMidFade = false;
+  originalVolumeBeforeFade = null;
+  resetSleepTimerUI();
+}
+
+function startSleepTimer(minutes) {
+  cancelSleepTimer();
+  if (!audio) return;
+  const durationMs = minutes * 60 * 1000;
+  sleepEndTime = Date.now() + durationMs;
+  originalVolumeBeforeFade = audio.volume;
+  isMidFade = false;
+
+  if (sleepTimerBtn) {
+    sleepTimerBtn.classList.add('is-active');
+  }
+  if (sleepCancelBtn) {
+    sleepCancelBtn.disabled = false;
+  }
+  sleepMenuItems.forEach(item => {
+    if (parseInt(item.dataset.minutes, 10) === minutes) {
+      item.classList.add('is-selected');
+    } else {
+      item.classList.remove('is-selected');
+    }
+  });
+
+  const updateCountdown = () => {
+    const remainingMs = sleepEndTime - Date.now();
+    const remainingSec = Math.round(remainingMs / 1000);
+
+    if (remainingSec <= 0) {
+      clearInterval(sleepTimerId);
+      sleepTimerId = null;
+      isMidFade = false;
+      audio.pause();
+      if (originalVolumeBeforeFade !== null) {
+        audio.volume = originalVolumeBeforeFade;
+        if (volumeSlider) volumeSlider.value = originalVolumeBeforeFade;
+        updateMuteIcons();
+      }
+      resetSleepTimerUI();
+      if (status) {
+        status.textContent = 'Temporizador finalizado · En pausa';
+        status.className = 'stream-status-tag';
+      }
+      return;
+    }
+
+    const mins = Math.floor(remainingSec / 60);
+    const secs = remainingSec % 60;
+    const label = mins > 0 ? `${mins}m` : `${secs}s`;
+    if (sleepTimerText) sleepTimerText.textContent = label;
+    if (sleepTimerBtn) {
+      sleepTimerBtn.setAttribute('title', `Apagado programado en ${label}`);
+      sleepTimerBtn.setAttribute('aria-label', `Apagado programado en ${label}`);
+    }
+
+    // Desvanecimiento suave en los últimos 30 segundos
+    if (remainingSec <= 30) {
+      isMidFade = true;
+      const factor = Math.max(0, remainingSec / 30);
+      const faded = originalVolumeBeforeFade * factor;
+      audio.volume = faded;
+      if (volumeSlider) volumeSlider.value = faded;
+      updateMuteIcons();
+    }
+  };
+
+  updateCountdown();
+  sleepTimerId = setInterval(updateCountdown, 1000);
+}
+
+if (sleepTimerBtn && sleepTimerMenu) {
+  sleepTimerBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isHidden = sleepTimerMenu.hasAttribute('hidden');
+    if (isHidden) {
+      sleepTimerMenu.removeAttribute('hidden');
+      sleepTimerBtn.setAttribute('aria-expanded', 'true');
+    } else {
+      sleepTimerMenu.setAttribute('hidden', '');
+      sleepTimerBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!sleepTimerMenu.contains(e.target) && e.target !== sleepTimerBtn) {
+      sleepTimerMenu.setAttribute('hidden', '');
+      sleepTimerBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !sleepTimerMenu.hasAttribute('hidden')) {
+      sleepTimerMenu.setAttribute('hidden', '');
+      sleepTimerBtn.setAttribute('aria-expanded', 'false');
+      sleepTimerBtn.focus();
+    }
+  });
+
+  sleepMenuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const mins = parseInt(item.dataset.minutes, 10);
+      if (mins > 0) {
+        startSleepTimer(mins);
+      } else {
+        cancelSleepTimer();
+      }
+      sleepTimerMenu.setAttribute('hidden', '');
+      sleepTimerBtn.setAttribute('aria-expanded', 'false');
+    });
+  });
+}
+
+// --- HISTORIAL DE TEMAS RECIENTES ("RECIÉN SONADAS") Y DEDICATORIA POR WHATSAPP ---
+const trackShareWa = document.querySelector('#track-share-wa');
+const recentTracksToggle = document.querySelector('#recent-tracks-toggle');
+const recentTracksPanel = document.querySelector('#recent-tracks-panel');
+const recentTracksList = document.querySelector('#recent-tracks-list');
+const recentBadge = document.querySelector('#recent-badge');
+
+let recentTracks = [];
+try {
+  const stored = sessionStorage.getItem('rinconada_recent_tracks');
+  if (stored) {
+    recentTracks = JSON.parse(stored);
+  }
+} catch (e) {}
+
+function renderRecentTracks() {
+  if (!recentTracksList) return;
+  if (!recentTracks || recentTracks.length === 0) {
+    recentTracksList.innerHTML = '<li class="recent-track-empty">Aún no hay canciones anteriores registradas.</li>';
+    if (recentBadge) recentBadge.textContent = '0';
+    return;
+  }
+  if (recentBadge) recentBadge.textContent = recentTracks.length;
+  recentTracksList.innerHTML = recentTracks.map(item => `
+    <li class="recent-track-item">
+      <span class="recent-track-name" title="${item.title}">${item.title}</span>
+      <span class="recent-track-time">${item.time}</span>
+    </li>
+  `).join('');
+}
+
+function addRecentTrack(title) {
+  if (!title) return;
+  const lower = title.toLowerCase();
+  if (lower.includes('sintonizando') || lower.includes('rinconada stereo') || lower.includes('transmisión')) return;
+  if (recentTracks.length > 0 && recentTracks[0].title.toLowerCase() === lower) return;
+
+  const now = new Date();
+  const timeFormatted = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  recentTracks.unshift({ title, time: timeFormatted });
+  if (recentTracks.length > 5) recentTracks.pop();
+
+  try {
+    sessionStorage.setItem('rinconada_recent_tracks', JSON.stringify(recentTracks));
+  } catch (e) {}
+  renderRecentTracks();
+}
+
+if (recentTracksToggle && recentTracksPanel) {
+  recentTracksToggle.addEventListener('click', () => {
+    const isHidden = recentTracksPanel.hasAttribute('hidden');
+    if (isHidden) {
+      recentTracksPanel.removeAttribute('hidden');
+      recentTracksToggle.setAttribute('aria-expanded', 'true');
+    } else {
+      recentTracksPanel.setAttribute('hidden', '');
+      recentTracksToggle.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+renderRecentTracks();
+
 // --- CONSULTA EN VIVO DEL TEMA SONANDO (METADATA SHOUTCAST VÍA JSONP) ---
 const trackTitleEl = document.querySelector('#track-title');
 const trackBoxEl = document.querySelector('#now-playing-box');
@@ -465,9 +782,26 @@ function updateNowPlaying(rawTitle) {
         trackTitleEl.style.opacity = '1';
       }, 150);
     }
+    if (stickyTrackTitle) {
+      stickyTrackTitle.textContent = cleaned;
+      stickyTrackTitle.setAttribute('title', cleaned);
+    }
     if (trackBoxEl) {
       trackBoxEl.classList.add('is-live');
     }
+
+    // Actualizar dedicatoria por WhatsApp con el tema sonando
+    const waDedicationMsg = encodeURIComponent(`¡Hola Rinconada Stereo! Estoy escuchando "${cleaned}" desde la web y quiero pedir una dedicatoria / saludo en cabina 📻🎶`);
+    const waUrl = `https://wa.me/573052430933?text=${waDedicationMsg}`;
+    if (trackShareWa) {
+      trackShareWa.href = waUrl;
+    }
+    if (stickyWaBtn) {
+      stickyWaBtn.href = waUrl;
+    }
+
+    // Registrar en el historial de canciones recientes
+    addRecentTrack(cleaned);
 
     if ('mediaSession' in navigator) {
       try {
