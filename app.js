@@ -293,6 +293,68 @@ if (audio && playBtn) {
       audio.pause();
     });
   }
+
+  // --- ATAJOS DE TECLADO GLOBALES (ACCESIBILIDAD Y MEDIA KEYS) ---
+  window.addEventListener('keydown', (e) => {
+    // Regla crítica: ignorar atajos si se presionan teclas modificadoras (Ctrl, Alt, Meta/Cmd)
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+    // Evitar repetición continua al mantener presionada la tecla
+    if (e.repeat) return;
+
+    // Regla crítica: ignorar si el foco actual es un campo de texto o elemento editable
+    const active = document.activeElement;
+    if (active) {
+      const tagName = active.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || active.isContentEditable) {
+        return;
+      }
+    }
+
+    const isSpace = (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space');
+    const isKeyK = (e.key === 'k' || e.key === 'K');
+    const isKeyM = (e.key === 'm' || e.key === 'M');
+
+    if (isSpace) {
+      // Si el foco está en un elemento interactivo (botones como playBtn, enlaces,
+      // detalles desplegables o el canvas de peces que usa Espacio para alimentarlos),
+      // respetar su funcionamiento específico y no intervenir.
+      const isInteractive = active && (
+        active.tagName === 'BUTTON' ||
+        active.tagName === 'A' ||
+        active.tagName === 'SUMMARY' ||
+        active.tagName === 'CANVAS' ||
+        active.tagName === 'IFRAME' ||
+        active.id === 'fish-canvas' ||
+        (typeof active.getAttribute === 'function' && (
+          active.getAttribute('role') === 'button' ||
+          active.getAttribute('role') === 'application'
+        ))
+      );
+
+      if (isInteractive) {
+        return;
+      }
+
+      // Si el foco está en el body o elementos no interactivos, evitar el desplazamiento
+      // vertical (scroll) y alternar entre reproducir y pausar la señal.
+      e.preventDefault();
+      if (playBtn) playBtn.click();
+      return;
+    }
+
+    if (isKeyK) {
+      e.preventDefault();
+      if (playBtn) playBtn.click();
+      return;
+    }
+
+    if (isKeyM) {
+      e.preventDefault();
+      if (muteBtn) muteBtn.click();
+      return;
+    }
+  });
 }
 
 // --- CONSULTA EN VIVO DEL TEMA SONANDO (METADATA SHOUTCAST VÍA JSONP) ---
