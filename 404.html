@@ -4,6 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0d62d9">
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('rinconada_theme');
+          var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+          var metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) {
+            metaTheme.setAttribute('content', theme === 'dark' ? '#071526' : '#0d62d9');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta name="description" content="Página no encontrada — Rinconada Stereo. Vuelve a la señal en vivo desde La Pacha, Magdalena.">
     <meta name="robots" content="noindex, follow">
     <title>Página no encontrada (404) — Rinconada Stereo</title>
@@ -43,6 +56,34 @@
         --red: #ff0d0f;
         --card-blue-1: #135fc7;
         --card-blue-2: #0b4393;
+        --card-bg: #ffffff;
+        --card-border: #d8e3f2;
+        --header-bg: linear-gradient(180deg, #0e5ed2 0%, #0a4ea8 100%);
+        --header-border: transparent;
+      }
+      :root[data-theme="dark"] {
+        --blue: #4d93f7;
+        --blue-dark: #2563eb;
+        --deep: #f2f7ff;
+        --ink: #e4edf8;
+        --cream: #071526;
+        --card-bg: #0b2240;
+        --card-border: #1b375b;
+        --header-bg: linear-gradient(180deg, #071c35 0%, #051427 100%);
+        --header-border: #1c3d66;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --blue: #4d93f7;
+          --blue-dark: #2563eb;
+          --deep: #f2f7ff;
+          --ink: #e4edf8;
+          --cream: #071526;
+          --card-bg: #0b2240;
+          --card-border: #1b375b;
+          --header-bg: linear-gradient(180deg, #071c35 0%, #051427 100%);
+          --header-border: #1c3d66;
+        }
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
@@ -52,9 +93,11 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
+        transition: background-color 0.25s ease, color 0.25s ease;
       }
       .site-header {
-        background: linear-gradient(180deg, #0e5ed2 0%, #0a4ea8 100%);
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--header-border);
         color: #ffffff;
         padding: 1.2rem 1rem;
         box-shadow: 0 4px 20px rgba(9, 33, 64, 0.15);
@@ -83,11 +126,12 @@
         text-align: center;
       }
       .card-404 {
-        background: #ffffff;
+        background: var(--card-bg);
         border-radius: 1.5rem;
         padding: clamp(2rem, 4vw, 3.2rem) clamp(1.5rem, 3.5vw, 2.5rem);
         box-shadow: 0 16px 40px rgba(9, 33, 64, 0.08);
-        border: 1px solid #d8e3f2;
+        border: 1px solid var(--card-border);
+        transition: background-color 0.25s ease, border-color 0.25s ease;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -104,6 +148,13 @@
         justify-content: center;
         box-shadow: 0 10px 25px rgba(13, 98, 217, 0.18);
         padding: 0.8rem;
+      }
+      :root[data-theme="dark"] .mascot-wrap,
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .mascot-wrap {
+          background: radial-gradient(circle, #0d2c59 0%, #081e3e 100%);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
       }
       .mascot-img {
         width: 100%;
@@ -128,6 +179,13 @@
         padding: 0.35rem 1rem;
         border-radius: 999px;
       }
+      :root[data-theme="dark"] .badge-404,
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) .badge-404 {
+          background: rgba(255, 13, 15, 0.2);
+          color: #ff9b9b;
+        }
+      }
       .title-404 {
         font-size: clamp(2rem, 3.6vw, 3rem);
         color: var(--deep);
@@ -141,7 +199,7 @@
         color: var(--blue);
       }
       .desc-404 {
-        color: #3b5270;
+        color: var(--lead-color, #3b5270);
         font-size: clamp(1.02rem, 1.2vw, 1.15rem);
         line-height: 1.55;
         max-width: 50ch;
@@ -175,7 +233,7 @@
       .footer-note {
         margin-top: 1.8rem;
         font-size: 0.88rem;
-        color: #647b96;
+        color: var(--lead-color, #647b96);
       }
     </style>
   </head>
