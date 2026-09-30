@@ -39,19 +39,85 @@ if (audio && playBtn) {
     updateMuteIcons();
   }
 
+  // Configuración de resiliencia y buffer de streaming en vivo
+  const rawStreamSrc = audio.getAttribute('src') || audio.src || 'https://play14.tikast.com:22012/stream';
+  const baseStreamUrl = rawStreamSrc.split('?')[0];
+
+  let wasPlayingBeforeOffline = false;
+  let retryTimeout = null;
+  let isAutoRetrying = false;
+  let lastRetryTimestamp = 0;
+  const RETRY_COOLDOWN_MS = 10000;
+
+  function getFreshStreamUrl() {
+    return `${baseStreamUrl}?t=${Date.now()}`;
+  }
+
+  function showFatalError() {
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    isAutoRetrying = false;
+    if (iconPlay) iconPlay.style.display = 'block';
+    if (iconPause) iconPause.style.display = 'none';
+    if (eqBars) eqBars.classList.remove('is-playing');
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', 'Reproducir señal en vivo');
+      playBtn.setAttribute('title', 'Reproducir señal en vivo');
+    }
+    if (status) {
+      status.textContent = 'Error al conectar';
+      status.className = 'stream-status-tag is-error';
+    }
+  }
+
+  function playLiveStream() {
+    if (!audio) return Promise.reject(new Error('No audio element'));
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    const currentVol = audio.volume;
+    const currentMuted = audio.muted;
+    audio.src = getFreshStreamUrl();
+    audio.load();
+    audio.volume = currentVol;
+    audio.muted = currentMuted;
+    if (status) {
+      status.textContent = 'Conectando con la señal…';
+      status.className = 'stream-status-tag is-connecting';
+    }
+    return audio.play();
+  }
+
+  // Estado inicial de conectividad
+  if (!navigator.onLine && status) {
+    status.textContent = 'Sin conexión a internet';
+    status.className = 'stream-status-tag is-error';
+  }
+
   playBtn.addEventListener('click', () => {
     if (audio.paused) {
-      if (status) {
-        status.textContent = 'Conectando con la señal…';
-        status.className = 'stream-status-tag is-connecting';
-      }
-      audio.play().catch(() => {
+      if (!navigator.onLine) {
         if (status) {
-          status.textContent = 'Error al conectar';
+          status.textContent = 'Sin conexión a internet';
           status.className = 'stream-status-tag is-error';
         }
+        return;
+      }
+      isAutoRetrying = false;
+      lastRetryTimestamp = 0;
+      playLiveStream().catch((err) => {
+        if (err && err.name === 'AbortError') return;
       });
     } else {
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+        retryTimeout = null;
+        isAutoRetrying = false;
+      }
+      wasPlayingBeforeOffline = false;
       audio.pause();
     }
   });
@@ -86,6 +152,8 @@ if (audio && playBtn) {
   });
 
   audio.addEventListener('playing', () => {
+    isAutoRetrying = false;
+    lastRetryTimestamp = 0;
     if (iconPlay) iconPlay.style.display = 'none';
     if (iconPause) iconPause.style.display = 'block';
     if (eqBars) eqBars.classList.add('is-playing');
@@ -111,6 +179,7 @@ if (audio && playBtn) {
   });
 
   audio.addEventListener('pause', () => {
+    if (isAutoRetrying) return;
     if (iconPlay) iconPlay.style.display = 'block';
     if (iconPause) iconPause.style.display = 'none';
     if (eqBars) eqBars.classList.remove('is-playing');
@@ -119,8 +188,13 @@ if (audio && playBtn) {
       playBtn.setAttribute('title', 'Reproducir señal en vivo');
     }
     if (status) {
-      status.textContent = 'Señal en pausa';
-      status.className = 'stream-status-tag';
+      if (!navigator.onLine || wasPlayingBeforeOffline) {
+        status.textContent = 'Sin conexión a internet';
+        status.className = 'stream-status-tag is-error';
+      } else {
+        status.textContent = 'Señal en pausa';
+        status.className = 'stream-status-tag';
+      }
     }
     if (typeof updatePollingSchedule === 'function') {
       updatePollingSchedule();
@@ -128,23 +202,96 @@ if (audio && playBtn) {
   });
 
   audio.addEventListener('error', () => {
-    if (iconPlay) iconPlay.style.display = 'block';
-    if (iconPause) iconPause.style.display = 'none';
-    if (eqBars) eqBars.classList.remove('is-playing');
-    if (playBtn) {
-      playBtn.setAttribute('aria-label', 'Reproducir señal en vivo');
-      playBtn.setAttribute('title', 'Reproducir señal en vivo');
+    if (!navigator.onLine) {
+      if (status) {
+        status.textContent = 'Sin conexión a internet';
+        status.className = 'stream-status-tag is-error';
+      }
+      return;
+    }
+
+    const now = Date.now();
+    const alreadyAttemptedRecently = isAutoRetrying || (now - lastRetryTimestamp < RETRY_COOLDOWN_MS);
+
+    if (alreadyAttemptedRecently) {
+      showFatalError();
+    } else {
+      isAutoRetrying = true;
+      lastRetryTimestamp = now;
+      if (status) {
+        status.textContent = 'Conectando con la señal…';
+        status.className = 'stream-status-tag is-connecting';
+      }
+      if (retryTimeout) clearTimeout(retryTimeout);
+      retryTimeout = setTimeout(() => {
+        retryTimeout = null;
+        playLiveStream().catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          showFatalError();
+        });
+      }, 2500);
+    }
+  });
+
+  // Manejo de eventos de red online y offline
+  window.addEventListener('offline', () => {
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+      isAutoRetrying = false;
+    }
+    const isAudioPlaying = audio && !audio.paused;
+    if (isAudioPlaying) {
+      wasPlayingBeforeOffline = true;
+      audio.pause();
     }
     if (status) {
-      status.textContent = 'Error al conectar';
+      status.textContent = 'Sin conexión a internet';
       status.className = 'stream-status-tag is-error';
+    }
+  });
+
+  window.addEventListener('online', () => {
+    if (wasPlayingBeforeOffline) {
+      wasPlayingBeforeOffline = false;
+      if (status) {
+        status.textContent = 'Conectando con la señal…';
+        status.className = 'stream-status-tag is-connecting';
+      }
+      isAutoRetrying = false;
+      lastRetryTimestamp = 0;
+      playLiveStream().catch((err) => {
+        if (err && err.name === 'AbortError') return;
+      });
+    } else if (status && audio && audio.paused) {
+      status.textContent = 'Señal en pausa';
+      status.className = 'stream-status-tag';
     }
   });
 
   // MediaSession API para controles del sistema operativo (móvil, teclado, pantalla de bloqueo)
   if ('mediaSession' in navigator) {
-    navigator.mediaSession.setActionHandler('play', () => { audio.play().catch(() => {}); });
-    navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); });
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (!navigator.onLine) {
+        if (status) {
+          status.textContent = 'Sin conexión a internet';
+          status.className = 'stream-status-tag is-error';
+        }
+        return;
+      }
+      isAutoRetrying = false;
+      lastRetryTimestamp = 0;
+      playLiveStream().catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+        retryTimeout = null;
+        isAutoRetrying = false;
+      }
+      wasPlayingBeforeOffline = false;
+      audio.pause();
+    });
   }
 }
 
