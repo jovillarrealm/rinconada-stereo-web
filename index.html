@@ -227,8 +227,9 @@
               </div>
             </div>
 
-            <!-- REPRODUCTOR CUSTOMIZADO POR DEFECTO -->
+            <!-- REPRODUCTOR DE AUDIO PRINCIPAL -->
             <div class="custom-player" id="custom-player">
+              <audio id="radio" preload="none" aria-label="Señal en vivo de Rinconada Stereo" src="https://play14.tikast.com:22012/stream"></audio>
               <div class="custom-player-main">
                 <button class="custom-play-btn" id="play-btn" type="button" aria-label="Reproducir señal en vivo" title="Reproducir señal en vivo">
                   <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -327,15 +328,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- REPRODUCTOR POR DEFECTO DEL NAVEGADOR (ALTERNATIVA) -->
-            <details class="browser-player-details" id="alternate-player">
-              <summary>Usar reproductor por defecto del navegador</summary>
-              <div class="browser-player-wrap">
-                <audio id="radio" controls preload="none" aria-label="Señal en vivo de Rinconada Stereo (reproductor nativo)" src="https://play14.tikast.com:22012/stream"></audio>
-                <div id="alternate-frame"></div>
-              </div>
-            </details>
           </div>
 
           <aside class="mascot-card" id="locupez" aria-label="Locupez, la mascota de Rinconada Stereo">
@@ -500,35 +492,18 @@
               </ul>
             </nav>
           </div>
-
-          <!-- Sintonía Directa y Contacto -->
-          <div class="footer-col footer-col-quick">
-            <h3 class="footer-col-title">Sintonía Directa</h3>
-            <div class="footer-quick-links">
-              <a class="footer-listen-anchor" href="#reproductor" aria-label="EN VIVO — Escuchar la señal">
-                <span class="footer-live-badge" aria-hidden="true">
-                  <span class="footer-live-dot"></span> EN VIVO
-                </span>
-                <span class="footer-listen-text">Escuchar la señal</span>
-                <span class="footer-arrow" aria-hidden="true">↑</span>
-              </a>
-              <a class="footer-whatsapp-anchor" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer">
-                <span class="footer-wa-icon" aria-hidden="true">💬</span>
-                <span class="footer-wa-text">WhatsApp (+57 305 243 0933)</span>
-                <span class="sr-only">(se abre en una pestaña nueva)</span>
-                <span class="footer-arrow" aria-hidden="true">↗</span>
-              </a>
-            </div>
-          </div>
         </div>
 
         <div class="footer-bottom-bar">
           <p class="footer-copy">
             © 2026 Rinconada Stereo · Radio en línea desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia. Todos los derechos reservados.
           </p>
-          <a class="footer-top-anchor" href="#inicio" aria-label="Inicio de página — Volver arriba">
-            <span>Inicio de página</span>
-            <span aria-hidden="true">↑</span>
+          <a class="footer-listen-anchor" href="#reproductor" aria-label="EN VIVO — Escuchar la señal">
+            <span class="footer-live-badge" aria-hidden="true">
+              <span class="footer-live-dot"></span> EN VIVO
+            </span>
+            <span class="footer-listen-text">Escuchar la señal</span>
+            <span class="footer-arrow" aria-hidden="true">↑</span>
           </a>
         </div>
       </div>

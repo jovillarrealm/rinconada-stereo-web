@@ -1137,21 +1137,6 @@ document.addEventListener('visibilitychange', () => {
   updatePollingSchedule();
 });
 
-// Reproductor alternativo en iframe bajo demanda
-const alternate = document.querySelector('#alternate-player');
-if (alternate) {
-  alternate.addEventListener('toggle', () => {
-    if (alternate.open && !document.querySelector('#alternate-frame iframe')) {
-      const frame = document.createElement('iframe');
-      frame.src = 'https://virtualtronics.com/streaming/customers/rinconadastereo/player.php?type=big';
-      frame.title = 'Reproductor alternativo de Rinconada Stereo';
-      frame.loading = 'lazy';
-      document.querySelector('#alternate-frame').append(frame);
-      if (audio) audio.pause();
-    }
-  });
-}
-
 // --- 8. MÓDULO CARGA DIFERIDA DE CHAT (ChatLoader) ---
 const chatIframe = document.querySelector('#chat iframe[data-src]');
 if (chatIframe) {
