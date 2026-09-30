@@ -4,6 +4,7 @@
   "description": "Emisora en vivo desde La Pacha, Magdalena. Un encuentro con tu región.",
   "start_url": "./",
   "scope": "./",
+  "id": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#f4f7fc",
@@ -25,6 +26,12 @@
     {
       "src": "assets/favicon-192x192.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/favicon-512x512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },

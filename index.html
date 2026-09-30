@@ -27,13 +27,15 @@
     <meta property="og:title" content="Rinconada Stereo — Un encuentro con tu región">
     <meta property="og:description" content="Señal en vivo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada. Acordeón, memoria y cultura comunitaria.">
     <meta property="og:url" content="https://rinconadastereo.com/">
-    <meta property="og:image" content="https://rinconadastereo.com/assets/og-cover.avif">
-    <meta property="og:image:type" content="image/avif">
+    <!-- Primary og:image en JPEG para máxima compatibilidad con WhatsApp, Telegram y Facebook -->
+    <meta property="og:image" content="https://rinconadastereo.com/assets/og-cover.jpg">
+    <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Rinconada Stereo — Transmisión en directo desde La Pacha, Magdalena">
-    <meta property="og:image" content="https://rinconadastereo.com/assets/og-cover.jpg">
-    <meta property="og:image:type" content="image/jpeg">
+    <!-- Alternativa AVIF moderna -->
+    <meta property="og:image" content="https://rinconadastereo.com/assets/og-cover.avif">
+    <meta property="og:image:type" content="image/avif">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Rinconada Stereo — Transmisión en directo desde La Pacha, Magdalena">
@@ -54,6 +56,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512x512.png">
     <link rel="manifest" href="manifest.webmanifest">
 
     <!-- Datos Estructurados Schema.org (JSON-LD) para Google Search y Knowledge Graph -->
@@ -80,8 +83,8 @@
             "url": "https://rinconadastereo.com/assets/logo-rinconada.png"
           },
           "image": [
-            "https://rinconadastereo.com/assets/og-cover.avif",
-            "https://rinconadastereo.com/assets/og-cover.jpg"
+            "https://rinconadastereo.com/assets/og-cover.jpg",
+            "https://rinconadastereo.com/assets/og-cover.avif"
           ],
           "description": "Emisora en vivo transmitiendo desde La Pacha, Magdalena, a orillas de la Ciénaga La Rinconada.",
           "broadcastDisplayName": "Rinconada Stereo",
@@ -390,6 +393,69 @@
       </section>
     </main>
 
+    <!-- FOOTER SEMÁNTICO Y ACCESIBLE -->
+    <footer class="site-footer" role="contentinfo">
+      <div class="footer-inner">
+        <div class="footer-grid">
+          <!-- Identidad y Misión de la Emisora -->
+          <div class="footer-col footer-col-identity">
+            <a class="footer-brand" href="#inicio" aria-label="Rinconada Stereo, volver al inicio">
+              <picture>
+                <source type="image/avif" srcset="assets/logo-rinconada.avif">
+                <source type="image/webp" srcset="assets/logo-rinconada.webp">
+                <img src="assets/logo-rinconada.png" width="220" height="98" alt="Rinconada Stereo" loading="lazy" decoding="async">
+              </picture>
+            </a>
+            <p class="footer-mission">
+              <strong>Rinconada Stereo</strong> · Radio comunitaria desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia.
+            </p>
+            <p class="footer-subtext">Un encuentro con tu región, preservando nuestras raíces, música y memoria ribereña a orillas de la Ciénaga La Rinconada.</p>
+          </div>
+
+          <!-- Navegación Accesible -->
+          <div class="footer-col footer-col-nav">
+            <h3 class="footer-col-title">Navegación</h3>
+            <nav class="footer-nav" aria-label="Navegación del pie de página">
+              <ul class="footer-nav-list">
+                <li><a href="#inicio">Inicio</a></li>
+                <li><a href="#blogs">Blogs</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+              </ul>
+            </nav>
+          </div>
+
+          <!-- Sintonía Directa y Contacto -->
+          <div class="footer-col footer-col-quick">
+            <h3 class="footer-col-title">Sintonía Directa</h3>
+            <div class="footer-quick-links">
+              <a class="footer-listen-anchor" href="#reproductor" aria-label="Ir al reproductor de la señal en vivo">
+                <span class="footer-live-badge" aria-hidden="true">
+                  <span class="footer-live-dot"></span> EN VIVO
+                </span>
+                <span class="footer-listen-text">Escuchar la señal</span>
+                <span class="footer-arrow" aria-hidden="true">↑</span>
+              </a>
+              <a class="footer-whatsapp-anchor" href="https://wa.me/573052430933" target="_blank" rel="noopener noreferrer">
+                <span class="footer-wa-icon" aria-hidden="true">💬</span>
+                <span class="footer-wa-text">WhatsApp (+57 305 243 0933)</span>
+                <span class="sr-only">(se abre en una pestaña nueva)</span>
+                <span class="footer-arrow" aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom-bar">
+          <p class="footer-copy">
+            © 2026 Rinconada Stereo · Radio comunitaria desde La Pacha, San Sebastián de Buenavista, Magdalena, Colombia. Todos los derechos reservados.
+          </p>
+          <a class="footer-top-anchor" href="#inicio" aria-label="Volver arriba al inicio de la página">
+            <span>Inicio de página</span>
+            <span aria-hidden="true">↑</span>
+          </a>
+        </div>
+      </div>
+    </footer>
   </body>
 </html>
 
