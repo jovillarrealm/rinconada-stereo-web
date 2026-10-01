@@ -306,6 +306,9 @@ const StorageAdapter = {
   local: createStorageGateway('localStorage'),
   session: createStorageGateway('sessionStorage')
 };
+if (typeof window !== 'undefined') {
+  window.StorageAdapter = StorageAdapter;
+}
 
 // --- 2. MÓDULO DE CONECTIVIDAD Y MODO AHORRO (NetworkMonitor) ---
 const NetworkMonitor = {
@@ -1028,6 +1031,9 @@ const AudioController = (function() {
     handleFatalError: showFatalError
   };
 })();
+if (typeof window !== 'undefined') {
+  window.AudioController = AudioController;
+}
 
 // Alias de compatibilidad global para tests y scripts
 const audio = AudioController.getAudioElement();
