@@ -31,18 +31,17 @@ Reviewed and updated 30 September 2026. The static HTML/CSS/JavaScript stack fit
 - **Exponential retry on network blips:** Added event handling for `stalled` audio states and introduced a 3-stage backoff (2.5s, 5s, 10s) on stream connection drops, enabling the player to recover automatically from transient cellular dead zones before displaying a fatal error. Direct user click rejections continue to route immediately to fatal error status for transparent user feedback.
 
 ### 9. Modular Architecture & Design Patterns (`app.js`)
-- **Separation of concerns:** Refactored the monolithic script into cohesive, single-responsibility modules:
-  - `StorageAdapter`: Safe wrapper for `localStorage` and `sessionStorage` with graceful exception handling.
+- **Deep Modules & Clear Seams (Matt Pocock Architecture Pattern):**
+  - `StorageAdapter`: Deep persistent storage module built on `createStorageGateway`. Absorbs automatic JSON serialization, safe parsing, validator predicates, typed primitives (`getNumber`, `getBoolean`, `getJson`, `setJson`), and a resilient in-memory fallback store (`memoryStore`) guarding against `SecurityError` or `QuotaExceededError`.
   - `NetworkMonitor`: Centralized detector for connection speed and Save-Data mode.
-  - `ThemeManager`: Observer-pattern theme state manager with subscriber dispatch.
-  - `AudioController`: Single source of truth for audio playback, stream URLs, volume synchronization, and keyboard shortcuts.
-  - `SleepTimer`: Countdown timer, smooth 30-second volume fade, and auto-shutoff.
-  - `TrackHistory`: XSS-safe song history with `sessionStorage` validation.
-  - `MetadataService`: Shoutcast JSONP polling with network-aware backoff and clean callback management.
+  - `ThemeManager`: Observer-pattern theme state manager with subscriber dispatch and validated theme storage.
+  - `AudioController`: Deep audio playback module encapsulating HTML5 Audio element, dual-player UI synchronization (hero player + sticky bottom player), internal smooth volume fading engine (`fadeEngine`), exponential backoff retries, and media keys.
+  - `SleepTimer`: Countdown timer decoupled from audio internals; communicates strictly across a clean seam via `AudioController.fade()`, `restoreFade()`, and `stopPlayback()`.
+  - `LiveTrackModule` (aliased as `MetadataService`): Collapsed deep module consolidating Shoutcast JSONP polling, track title sanitization, WhatsApp dedication URL formatting, automatic history storage, UI transitions, MediaSession OS metadata, and pub/sub event subscription (`subscribe(fn)`).
   - `WeatherService`: Open-Meteo client with session caching and offline resilience.
   - `ChatLoader`: Lazy-loading of third-party chat widgets with Save-Data consideration.
   - `FishPond`: HTML5 Canvas 2D simulation with delta-time physics and low-power compliance.
-  - `Global Compatibility Layer`: Preserves global function exports (`recentTracks`, `addRecentTrack`, `updateNowPlaying`, `setStickyVisible`, `stopPlayback`, `playLiveStream`, `fetchLiveTrack`) ensuring 100% backward compatibility with test suites and external integrations.
+  - `Global Compatibility Layer`: Preserves global function exports (`recentTracks`, `addRecentTrack`, `updateNowPlaying`, `setStickyVisible`, `stopPlayback`, `playLiveStream`, `fetchLiveTrack`, `window.StorageAdapter`, `window.AudioController`, `window.LiveTrackModule`) ensuring 100% backward compatibility with test suites and external integrations.
 
 ### 10. CSS Syntax Corrections & Render Containment (`styles.css`)
 - **Trailing comma syntax fixes:** Resolved two invalid trailing-comma `@media` syntax bugs in `:root[data-theme="dark"] .skip-link` and `:root[data-theme="dark"] .mascot-card::before` selectors that caused standard CSS parsers to discard the rules.
