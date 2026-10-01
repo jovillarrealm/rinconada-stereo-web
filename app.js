@@ -1254,6 +1254,7 @@ const LiveTrackModule = (function() {
   let metaPollInterval = null;
   let pendingMetaScript = null;
   let metaTimeoutId = null;
+  const subscribers = [];
 
   // Carga inicial y saneamiento estricto del historial de temas desde almacenamiento seguro de sesión
   const recentTracks = (function loadInitialHistory() {
@@ -1415,6 +1416,12 @@ const LiveTrackModule = (function() {
       updateDedicationLinks(cleaned);
       addRecentTrack(cleaned);
       updateMediaSession(cleaned);
+
+      for (let i = 0; i < subscribers.length; i++) {
+        try {
+          subscribers[i]({ title: cleaned, raw: rawTitle });
+        } catch (err) {}
+      }
     }
     return cleaned;
   }
@@ -1554,6 +1561,16 @@ const LiveTrackModule = (function() {
 
   return {
     init,
+    subscribe: (fn) => {
+      if (typeof fn === 'function') {
+        subscribers.push(fn);
+        return () => {
+          const idx = subscribers.indexOf(fn);
+          if (idx !== -1) subscribers.splice(idx, 1);
+        };
+      }
+      return () => {};
+    },
     updateNowPlaying,
     fetchLiveTrack,
     updatePollingSchedule,
