@@ -29,12 +29,9 @@
   --locupez-quote: #1e3a5f;
   --locupez-pill-bg: #0d62d9;
 
-  /* Ciénaga interactiva y canvas */
-  --cienaga-bg: linear-gradient(180deg, var(--cream) 0%, #eaf1fa 35%, #eaf1fa 65%, white 100%);
-  --canvas-bg: linear-gradient(180deg, #dbe8f7 0%, #cbdef4 100%);
-  --canvas-border: #bfd6f0;
-  --canvas-shadow: inset 0 2px 8px rgba(18, 54, 99, 0.08);
-  --cienaga-caption: #576d8a;
+  /* Separador de río SVG */
+  --river-divider-color: #3676CE;
+  --river-divider-bg: transparent;
 
   /* Sección 02 (En la emisora) y Blogs */
   --schedule-bg: #ffffff;
@@ -91,11 +88,8 @@
   --locupez-quote: #d6e6fa;
   --locupez-pill-bg: #0d62d9;
 
-  --cienaga-bg: linear-gradient(180deg, #071526 0%, #081a30 50%, #071526 100%);
-  --canvas-bg: linear-gradient(180deg, #081a30 0%, #051325 100%);
-  --canvas-border: #18375e;
-  --canvas-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.5);
-  --cienaga-caption: #adc2db;
+  --river-divider-color: #3676CE;
+  --river-divider-bg: transparent;
 
   --schedule-bg: #071526;
   --blogs-card-bg: #0b2240;
@@ -149,11 +143,8 @@
     --locupez-quote: #d6e6fa;
     --locupez-pill-bg: #0d62d9;
 
-    --cienaga-bg: linear-gradient(180deg, #071526 0%, #081a30 50%, #071526 100%);
-    --canvas-bg: linear-gradient(180deg, #081a30 0%, #051325 100%);
-    --canvas-border: #18375e;
-    --canvas-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.5);
-    --cienaga-caption: #adc2db;
+    --river-divider-color: #3676CE;
+    --river-divider-bg: transparent;
 
     --schedule-bg: #071526;
     --blogs-card-bg: #0b2240;
@@ -188,7 +179,7 @@ body { margin: 0; color: var(--ink); background: var(--cream); font-family: Aria
 button, a, audio { touch-action: manipulation; }
 a { color: inherit; }
 button { font: inherit; cursor: pointer; }
-a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visible, input:focus-visible, canvas:focus-visible { outline: 3px solid var(--yellow); outline-offset: 4px; }
+a:focus-visible, button:focus-visible, summary:focus-visible, audio:focus-visible, input:focus-visible { outline: 3px solid var(--yellow); outline-offset: 4px; }
 .sr-only {
   position: absolute;
   width: 1px;
@@ -334,7 +325,7 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 
 /* 01 / SECCIÓN UNIFICADA: HERO + ESCUCHA (SIN SCROLL) */
 .hero-listen { max-width: 1560px; margin: auto; padding: clamp(2rem, 3vw, 3rem) clamp(1rem, 2vw, 2.2rem) 3.5rem; }
-.eyebrow, .kicker, .section-number, .fish-tag { font-size: .78rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.eyebrow, .kicker, .section-number { font-size: .78rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .eyebrow { display: flex; align-items: center; gap: .7rem; color: var(--blue); }
 .live-dot { display: inline-block; width: .65rem; height: .65rem; flex: none; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 .25rem rgba(255, 13, 15, 0.25); animation: liveDotPulse 1.8s infinite; }
 @keyframes liveDotPulse {
@@ -936,21 +927,26 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .chat-card h2 { margin: 0 0 1.2rem; font-size: clamp(1.6rem, 2.3vw, 2.2rem); letter-spacing: -.03em; color: #ffffff; line-height: 1.05; }
 .chat-card iframe { display: block; width: 100%; height: 460px; border: 2px solid rgba(255, 255, 255, 0.15); border-radius: .8rem; background: #0b2545; }
 
-/* FRANJA DE PECESITOS (CANVAS 2D ANTES DE LA SECCIÓN 02) */
-.fish-pond-section {
-  background: var(--cienaga-bg);
-  padding: 1.5rem clamp(1rem, 2vw, 2.2rem) 2.5rem;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
-  transition: background 0.25s ease;
+/* SEPARADOR DE RÍO SVG (STATIC SVG RIVER WAVE DIVIDER) */
+.river-divider {
+  display: block;
+  width: 100%;
+  line-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--river-divider-color, #3676CE);
+  background: var(--river-divider-bg, transparent);
+  pointer-events: none;
 }
-.fish-pond-inner { max-width: 1560px; margin: auto; }
-.fish-pond-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
-.fish-tag { color: var(--blue); }
-.fish-caption { margin: .2rem 0 0; color: var(--cienaga-caption); font-size: .84rem; font-weight: 600; }
-.fish-icon { font-size: 1rem; color: var(--blue); }
-.canvas-wrapper { position: relative; width: 100%; height: 300px; border-radius: 1rem; overflow: hidden; background: var(--canvas-bg); border: 1px solid var(--canvas-border); box-shadow: var(--canvas-shadow); cursor: pointer; touch-action: none; transition: background 0.25s ease, border-color 0.25s ease; }
-#fish-canvas { width: 100%; height: 100%; display: block; }
+
+.river-divider svg {
+  display: block;
+  width: 100%;
+  height: 50px;
+  vertical-align: bottom;
+  color: inherit;
+}
 
 /* SECCIÓN 02 / EN LA EMISORA */
 .schedule-section {
@@ -1204,8 +1200,7 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
   .sticky-player-inner { gap: 0.75rem; }
   .sticky-play-btn { width: 40px; height: 40px; min-width: 40px; }
   .sticky-track-title { font-size: 0.88rem; }
-  
-  .canvas-wrapper { height: 230px; }
+  .river-divider svg { height: 38px; }
   .schedule-bottom, .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
   .schedule-section, .contact-section { padding-bottom: 4rem; }
   .section-heading { align-items: start; flex-direction: column; gap: 0; }
@@ -1278,7 +1273,7 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
   .blog-link-row { padding: 1.05rem 1.15rem; flex-direction: column; align-items: flex-start; gap: .45rem; }
   .blog-link-title { font-size: 1.04rem; }
   .blog-link-meta { width: 100%; justify-content: space-between; }
-  .canvas-wrapper { height: 205px; }
+  .river-divider svg { height: 26px; }
   .footer-listen-anchor { padding: 0.38rem 0.75rem; font-size: 0.8rem; }
   .footer-brand img { width: 160px; }
 }
