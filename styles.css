@@ -91,7 +91,7 @@
   --locupez-quote: #d6e6fa;
   --locupez-pill-bg: #0d62d9;
 
-  --river-divider-color: #3676CE;
+  --river-divider-color: #4D93F7;
   --river-divider-bg: transparent;
 
   --blogs-bg: #071526;
@@ -149,7 +149,7 @@
     --locupez-quote: #d6e6fa;
     --locupez-pill-bg: #0d62d9;
 
-    --river-divider-color: #3676CE;
+    --river-divider-color: #4D93F7;
     --river-divider-bg: transparent;
 
     --blogs-bg: #071526;
@@ -966,8 +966,8 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 }
 
 .chat-toggle-btn:focus-visible {
-  outline: 3px solid var(--accent, #ffd000);
-  outline-offset: 2px;
+  outline: 3px solid var(--yellow);
+  outline-offset: 4px;
   background: rgba(255, 255, 255, 0.28);
 }
 
@@ -990,10 +990,6 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.chat-card.is-open .chat-toggle-arrow,
-.chat-toggle-btn[aria-expanded="true"] .chat-toggle-arrow {
-  transform: rotate(180deg);
-}
 
 /* ESCRITORIO (> 900px): Botón oculto, drawer siempre visible */
 @media (min-width: 901px) {
@@ -1100,7 +1096,7 @@ h2 span { font-family: Georgia, serif; font-weight: 400; font-style: italic; }
 .weather-header .weather-caption { margin: 0; }
 .weather-caption { margin: 0 0 .7rem; color: var(--weather-caption); font-size: .76rem; font-weight: 700; line-height: 1.5; }
 .weather-clock { display: inline-flex; align-items: center; gap: .4rem; padding: .22rem .65rem; border-radius: 999px; background: var(--weather-clock-bg); color: var(--weather-clock-color); border: 1px solid var(--weather-clock-border); box-shadow: 0 1px 3px rgba(9, 33, 64, 0.12); font-size: .76rem; font-weight: 700; letter-spacing: .02em; font-variant-numeric: tabular-nums; line-height: 1.4; white-space: nowrap; }
-.weather-clock::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px rgba(255, 208, 0, 0.65); flex-shrink: 0; }
+.weather-clock::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; flex-shrink: 0; }
 .weather-card-content { background: var(--weather-bg); border: 1px solid var(--weather-border); border-radius: .9rem; padding: 1.3rem; min-height: 140px; display: flex; flex-direction: column; justify-content: center; transition: background-color 0.25s ease, border-color 0.25s ease; }
 .weather-main { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .weather-temp-group { display: flex; flex-direction: column; }

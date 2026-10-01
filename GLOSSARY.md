@@ -1,6 +1,6 @@
 # Rinconada Stereo Web
 
-Radio en línea y emisora en directo desde San José de la Rinconada, Magdalena, Colombia. Diseñada como sitio estático de alta calidad para operar de forma resiliente bajo condiciones de conectividad móvil intermitente y bajo consumo de datos.
+Radio en línea y emisora en directo desde La Rinconada, Magdalena, Colombia. Diseñada como sitio estático de alta calidad para operar de forma resiliente bajo condiciones de conectividad móvil intermitente y bajo consumo de datos.
 
 ## Language
 
@@ -9,11 +9,11 @@ La transmisión de audio digital en vivo emitida por la emisora vía streaming S
 _Avoid_: Stream, transmisión, live, emisora comunitaria
 
 **Oyente**:
-La persona que sintoniza la emisora desde San José de la Rinconada, la región del bajo Magdalena o cualquier lugar del mundo.
+La persona que sintoniza la emisora desde La Rinconada, la región del bajo Magdalena o cualquier lugar del mundo.
 _Avoid_: Usuario, visitante, cliente
 
 **Cabina**:
-El centro de locución y transmisión de la emisora en San José de la Rinconada.
+El centro de locución y transmisión de la emisora en La Rinconada, Magdalena.
 _Avoid_: Estudio, oficina, central
 
 **Modo Sin Señal**:

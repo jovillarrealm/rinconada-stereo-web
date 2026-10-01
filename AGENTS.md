@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Rinconada Stereo Web — Radio en línea y señal digital cultural de San José de la Rinconada.
+Rinconada Stereo Web — Radio en línea y señal digital cultural de La Rinconada, Magdalena, Colombia.
 
 ## Institutional Identity & Terminology Rules
 

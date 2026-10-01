@@ -2,7 +2,7 @@
   "name": "rinconada-stereo-web",
   "version": "1.0.0",
   "private": true,
-  "description": "Emisora online de San José de la Rinconada",
+  "description": "Emisora online de La Rinconada, Magdalena, Colombia",
   "scripts": {
     "test": "node checks.cjs",
     "check": "wrangler deploy --dry-run",
