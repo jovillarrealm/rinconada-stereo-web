@@ -230,176 +230,220 @@ if (document.readyState === 'loading') {
 }
 
 // --- 4. MÓDULO DEL REPRODUCTOR DE AUDIO (AudioController) ---
-const audio = document.querySelector('#radio');
-const status = document.querySelector('#audio-status');
-const playBtn = document.querySelector('#play-btn');
-const iconPlay = playBtn ? playBtn.querySelector('.icon-play') : null;
-const iconPause = playBtn ? playBtn.querySelector('.icon-pause') : null;
-const muteBtn = document.querySelector('#mute-btn');
-const iconVolOn = muteBtn ? muteBtn.querySelector('.icon-vol-on') : null;
-const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
-const volumeSlider = document.querySelector('#volume-slider');
-const eqBars = document.querySelector('#eq-bars');
+/**
+ * Subsistema profundo de reproducción de audio.
+ * Encapsula el elemento HTML5 Audio, sincronización bidireccional de interfaz dual
+ * (reproductor principal y mini-reproductor flotante), motor de desvanecimiento suave (fade),
+ * reconexión automática con retroceso exponencial, atajos globales e integración MediaSession.
+ */
+const AudioController = (function() {
+  // Elementos DOM del reproductor principal
+  const audio = document.querySelector('#radio');
+  const statusEl = document.querySelector('#audio-status');
+  const playBtn = document.querySelector('#play-btn');
+  const iconPlay = playBtn ? playBtn.querySelector('.icon-play') : null;
+  const iconPause = playBtn ? playBtn.querySelector('.icon-pause') : null;
+  const muteBtn = document.querySelector('#mute-btn');
+  const iconVolOn = muteBtn ? muteBtn.querySelector('.icon-vol-on') : null;
+  const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
+  const volumeSlider = document.querySelector('#volume-slider');
+  const eqBars = document.querySelector('#eq-bars');
 
-// Mini-reproductor flotante (Sticky Bottom Player)
-const stickyPlayer = document.querySelector('#sticky-player');
-const stickyPlayBtn = document.querySelector('#sticky-play-btn');
-const stickyIconPlay = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-play') : null;
-const stickyIconPause = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-pause') : null;
-const stickyMuteBtn = document.querySelector('#sticky-mute-btn');
-const stickyIconVolOn = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-on') : null;
-const stickyIconVolMute = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-mute') : null;
-const stickyVolumeSlider = document.querySelector('#sticky-volume-slider');
-const stickyTrackTitle = document.querySelector('#sticky-track-title');
-const stickyStatusTag = document.querySelector('#sticky-status-tag');
-const stickyStatusLabel = document.querySelector('#sticky-status-label');
-const stickyWaBtn = document.querySelector('#sticky-wa-btn');
-const stickyTopBtn = document.querySelector('#sticky-top-btn');
-const playerCardEl = document.querySelector('#reproductor');
+  // Elementos DOM del mini-reproductor flotante (Sticky Bottom Player)
+  const stickyPlayer = document.querySelector('#sticky-player');
+  const stickyPlayBtn = document.querySelector('#sticky-play-btn');
+  const stickyIconPlay = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-play') : null;
+  const stickyIconPause = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-pause') : null;
+  const stickyMuteBtn = document.querySelector('#sticky-mute-btn');
+  const stickyIconVolOn = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-on') : null;
+  const stickyIconVolMute = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-mute') : null;
+  const stickyVolumeSlider = document.querySelector('#sticky-volume-slider');
+  const stickyStatusTag = document.querySelector('#sticky-status-tag');
+  const stickyStatusLabel = document.querySelector('#sticky-status-label');
+  const stickyTopBtn = document.querySelector('#sticky-top-btn');
+  const playerCardEl = document.querySelector('#reproductor');
 
-const VOL_STORAGE_KEY = 'rinconada_volume';
-const MUTE_STORAGE_KEY = 'rinconada_muted';
+  // Claves de persistencia
+  const VOL_STORAGE_KEY = 'rinconada_volume';
+  const MUTE_STORAGE_KEY = 'rinconada_muted';
 
-function updateStickyStatus(type, label) {
-  if (!stickyStatusTag) return;
-  stickyStatusTag.className = `sticky-status-tag ${type ? 'is-' + type : ''}`;
-  if (stickyStatusLabel) {
-    stickyStatusLabel.textContent = label;
-  }
-}
+  // Estado del streaming y reconexión
+  let wasPlayingBeforeOffline = false;
+  let retryTimeout = null;
+  let isAutoRetrying = false;
+  let retryAttempt = 0;
+  const MAX_AUTO_RETRIES = 3;
 
-function updateMuteIcons() {
-  if (!audio) return;
-  const isMuted = audio.muted || audio.volume === 0;
+  // Motor interno de desvanecimiento de volumen (Fading Engine)
+  const fadeEngine = {
+    isMidFade: false,
+    originalVolume: null
+  };
 
-  // Iconos reproductor principal
-  if (iconVolOn && iconVolMute) {
-    iconVolOn.style.display = isMuted ? 'none' : 'block';
-    iconVolMute.style.display = isMuted ? 'block' : 'none';
-  }
-  if (muteBtn) {
-    muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-    muteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-    muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
-  }
+  const rawStreamSrc = (audio && (audio.getAttribute('src') || audio.src)) || 'https://play14.tikast.com:22012/stream';
+  const baseStreamUrl = rawStreamSrc.split('?')[0];
 
-  // Iconos sticky player
-  if (stickyIconVolOn && stickyIconVolMute) {
-    stickyIconVolOn.style.display = isMuted ? 'none' : 'block';
-    stickyIconVolMute.style.display = isMuted ? 'block' : 'none';
-  }
-  if (stickyMuteBtn) {
-    stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-    stickyMuteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-    stickyMuteBtn.setAttribute('aria-pressed', String(isMuted));
+  function getFreshStreamUrl() {
+    return baseStreamUrl + '?t=' + Date.now();
   }
 
-  for (const slider of [volumeSlider, stickyVolumeSlider]) {
-    if (!slider) continue;
-    slider.value = isMuted ? 0 : audio.volume;
-    slider.setAttribute('aria-valuenow', slider.value);
-    slider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : `${Math.round(audio.volume * 100)} por ciento`);
+  function updateStickyStatus(type, label) {
+    if (!stickyStatusTag) return;
+    stickyStatusTag.className = 'sticky-status-tag ' + (type ? 'is-' + type : '');
+    if (stickyStatusLabel) {
+      stickyStatusLabel.textContent = label;
+    }
   }
-}
 
-function updatePlayPauseIcons(isPlaying) {
-  if (iconPlay) iconPlay.style.display = isPlaying ? 'none' : 'block';
-  if (iconPause) iconPause.style.display = isPlaying ? 'block' : 'none';
-  if (playBtn) {
-    playBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-    playBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+  function setStatus(mainType, mainText, stickyType, stickyLabel) {
+    if (statusEl) {
+      statusEl.textContent = mainText;
+      statusEl.className = mainType ? 'stream-status-tag is-' + mainType : 'stream-status-tag';
+    }
+    if (stickyType !== undefined) {
+      updateStickyStatus(stickyType, stickyLabel !== undefined ? stickyLabel : mainText);
+    }
   }
-  if (stickyIconPlay) stickyIconPlay.style.display = isPlaying ? 'none' : 'block';
-  if (stickyIconPause) stickyIconPause.style.display = isPlaying ? 'block' : 'none';
-  if (stickyPlayBtn) {
-    stickyPlayBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-    stickyPlayBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-  }
-  if (eqBars) {
-    if (isPlaying) eqBars.classList.add('is-playing');
-    else eqBars.classList.remove('is-playing');
-  }
-}
 
-function setStickyVisible(isVisible) {
-  if (!stickyPlayer) return;
-  if (isVisible) {
-    stickyPlayer.classList.add('is-visible');
-    stickyPlayer.removeAttribute('aria-hidden');
-    stickyPlayer.removeAttribute('inert');
-    try { stickyPlayer.inert = false; } catch (e) {}
-  } else {
-    stickyPlayer.classList.remove('is-visible');
-    stickyPlayer.setAttribute('aria-hidden', 'true');
-    stickyPlayer.setAttribute('inert', '');
-    try { stickyPlayer.inert = true; } catch (e) {}
-  }
-}
+  function updateMuteIcons() {
+    if (!audio) return;
+    const isMuted = audio.muted || audio.volume === 0;
 
-// Variables de estado del streaming
-let wasPlayingBeforeOffline = false;
-let retryTimeout = null;
-let isAutoRetrying = false;
-let retryAttempt = 0;
-const MAX_AUTO_RETRIES = 3;
+    // Iconos reproductor principal
+    if (iconVolOn && iconVolMute) {
+      iconVolOn.style.display = isMuted ? 'none' : 'block';
+      iconVolMute.style.display = isMuted ? 'block' : 'none';
+    }
+    if (muteBtn) {
+      muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+      muteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+      muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
+    }
 
-const rawStreamSrc = (audio && (audio.getAttribute('src') || audio.src)) || 'https://play14.tikast.com:22012/stream';
-const baseStreamUrl = rawStreamSrc.split('?')[0];
+    // Iconos sticky player
+    if (stickyIconVolOn && stickyIconVolMute) {
+      stickyIconVolOn.style.display = isMuted ? 'none' : 'block';
+      stickyIconVolMute.style.display = isMuted ? 'block' : 'none';
+    }
+    if (stickyMuteBtn) {
+      stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+      stickyMuteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+      stickyMuteBtn.setAttribute('aria-pressed', String(isMuted));
+    }
 
-function getFreshStreamUrl() {
-  return `${baseStreamUrl}?t=${Date.now()}`;
-}
+    for (const slider of [volumeSlider, stickyVolumeSlider]) {
+      if (!slider) continue;
+      slider.value = isMuted ? 0 : audio.volume;
+      slider.setAttribute('aria-valuenow', slider.value);
+      slider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : Math.round(audio.volume * 100) + ' por ciento');
+    }
+  }
 
-function showFatalError() {
-  if (retryTimeout) {
-    clearTimeout(retryTimeout);
-    retryTimeout = null;
+  function updatePlayPauseIcons(isPlaying) {
+    if (iconPlay) iconPlay.style.display = isPlaying ? 'none' : 'block';
+    if (iconPause) iconPause.style.display = isPlaying ? 'block' : 'none';
+    if (playBtn) {
+      playBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+      playBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+    }
+    if (stickyIconPlay) stickyIconPlay.style.display = isPlaying ? 'none' : 'block';
+    if (stickyIconPause) stickyIconPause.style.display = isPlaying ? 'block' : 'none';
+    if (stickyPlayBtn) {
+      stickyPlayBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+      stickyPlayBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+    }
+    if (eqBars) {
+      if (isPlaying) eqBars.classList.add('is-playing');
+      else eqBars.classList.remove('is-playing');
+    }
   }
-  isAutoRetrying = false;
-  retryAttempt = 0;
-  updatePlayPauseIcons(false);
-  updateStickyStatus('error', 'Error al conectar');
-  if (status) {
-    status.textContent = 'Error al conectar';
-    status.className = 'stream-status-tag is-error';
-  }
-}
 
-function stopPlayback() {
-  if (retryTimeout) {
-    clearTimeout(retryTimeout);
-    retryTimeout = null;
+  function setStickyVisible(isVisible) {
+    if (!stickyPlayer) return;
+    if (isVisible) {
+      stickyPlayer.classList.add('is-visible');
+      stickyPlayer.removeAttribute('aria-hidden');
+      stickyPlayer.removeAttribute('inert');
+      try { stickyPlayer.inert = false; } catch (e) {}
+    } else {
+      stickyPlayer.classList.remove('is-visible');
+      stickyPlayer.setAttribute('aria-hidden', 'true');
+      stickyPlayer.setAttribute('inert', '');
+      try { stickyPlayer.inert = true; } catch (e) {}
+    }
   }
-  isAutoRetrying = false;
-  retryAttempt = 0;
-  wasPlayingBeforeOffline = false;
-  if (audio) {
-    audio.pause();
-  }
-}
 
-function playLiveStream() {
-  if (!audio) return Promise.reject(new Error('No audio element'));
-  if (retryTimeout) {
-    clearTimeout(retryTimeout);
-    retryTimeout = null;
+  // Métodos del motor de desvanecimiento (Fading Engine)
+  function fadeVolume(factor) {
+    if (!audio) return;
+    if (!fadeEngine.isMidFade) {
+      fadeEngine.originalVolume = (typeof audio.volume === 'number' && !isNaN(audio.volume)) ? audio.volume : 1;
+      fadeEngine.isMidFade = true;
+    }
+    const target = Math.max(0, Math.min(1, fadeEngine.originalVolume * factor));
+    audio.volume = target;
+    updateMuteIcons();
   }
-  const currentVol = audio.volume;
-  const currentMuted = audio.muted;
-  audio.src = getFreshStreamUrl();
-  audio.load();
-  audio.volume = currentVol;
-  audio.muted = currentMuted;
-  if (status) {
-    status.textContent = 'Conectando con la señal…';
-    status.className = 'stream-status-tag is-connecting';
-  }
-  return audio.play();
-}
 
-// Inicialización de volumen y listeners de audio
-if (audio && playBtn) {
-  if (volumeSlider) {
+  function restoreVolume() {
+    if (fadeEngine.isMidFade && fadeEngine.originalVolume !== null && audio) {
+      audio.volume = fadeEngine.originalVolume;
+      updateMuteIcons();
+    }
+    fadeEngine.isMidFade = false;
+    fadeEngine.originalVolume = null;
+  }
+
+  function showFatalError() {
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    isAutoRetrying = false;
+    retryAttempt = 0;
+    updatePlayPauseIcons(false);
+    setStatus('error', 'Error al conectar', 'error', 'Error al conectar');
+  }
+
+  function stopPlayback() {
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    isAutoRetrying = false;
+    retryAttempt = 0;
+    wasPlayingBeforeOffline = false;
+    if (fadeEngine.isMidFade) {
+      restoreVolume();
+    }
+    if (audio) {
+      audio.pause();
+    }
+  }
+
+  function playLiveStream() {
+    if (!audio) return Promise.reject(new Error('No audio element'));
+    if (retryTimeout) {
+      clearTimeout(retryTimeout);
+      retryTimeout = null;
+    }
+    const currentVol = audio.volume;
+    const currentMuted = audio.muted;
+    audio.src = getFreshStreamUrl();
+    if (typeof audio.load === 'function') {
+      audio.load();
+    }
+    audio.volume = currentVol;
+    audio.muted = currentMuted;
+    if (statusEl) {
+      statusEl.textContent = 'Conectando con la señal…';
+      statusEl.className = 'stream-status-tag is-connecting';
+    }
+    return audio.play();
+  }
+
+  function initVolume() {
+    if (!audio || !volumeSlider) return;
     const savedVol = StorageAdapter.local.get(VOL_STORAGE_KEY);
     const savedMute = StorageAdapter.local.get(MUTE_STORAGE_KEY);
     if (savedVol !== null) {
@@ -419,492 +463,577 @@ if (audio && playBtn) {
     updateMuteIcons();
   }
 
-  // Estado inicial de conectividad
-  if (!NetworkMonitor.isOnline() && status) {
-    status.textContent = 'Sin conexión a internet';
-    status.className = 'stream-status-tag is-error';
-  }
+  function init() {
+    if (!audio || !playBtn) return;
 
-  playBtn.addEventListener('click', () => {
-    if (audio.paused) {
-      if (!NetworkMonitor.isOnline()) {
-        if (status) {
-          status.textContent = 'Sin conexión a internet';
-          status.className = 'stream-status-tag is-error';
-        }
-        return;
-      }
-      isAutoRetrying = false;
-      retryAttempt = 0;
-      playLiveStream().catch((err) => {
-        if (err && err.name === 'AbortError') return;
-        showFatalError();
-      });
-    } else {
-      if (typeof cancelSleepTimer === 'function') {
-        cancelSleepTimer();
-      }
-      stopPlayback();
+    initVolume();
+
+    // Estado inicial de conectividad
+    if (!NetworkMonitor.isOnline() && statusEl) {
+      statusEl.textContent = 'Sin conexión a internet';
+      statusEl.className = 'stream-status-tag is-error';
     }
-  });
 
-  if (stickyPlayBtn) {
-    stickyPlayBtn.addEventListener('click', () => {
-      playBtn.click();
-    });
-  }
-
-  // Sincronización de volumen y guardado en almacenamiento local
-  audio.addEventListener('volumechange', updateMuteIcons);
-  for (const slider of [volumeSlider, stickyVolumeSlider]) {
-    if (!slider) continue;
-    slider.addEventListener('input', () => {
-      audio.volume = Number(slider.value);
-      audio.muted = (audio.volume === 0);
-      StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
-      StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
-      updateMuteIcons();
-    });
-  }
-
-  if (muteBtn) {
-    muteBtn.addEventListener('click', () => {
-      audio.muted = !audio.muted;
-      if (!audio.muted && audio.volume === 0) {
-        audio.volume = 0.5;
-        if (volumeSlider) volumeSlider.value = 0.5;
-        if (stickyVolumeSlider) stickyVolumeSlider.value = 0.5;
-      }
-      StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
-      StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
-      updateMuteIcons();
-    });
-  }
-
-  if (stickyMuteBtn) {
-    stickyMuteBtn.addEventListener('click', () => {
-      if (muteBtn) muteBtn.click();
-    });
-  }
-
-  // Desplazamiento suave al reproductor principal desde el sticky player
-  if (stickyTopBtn && playerCardEl) {
-    stickyTopBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const cardRect = playerCardEl.getBoundingClientRect();
-      const targetY = Math.max(0, window.pageYOffset + cardRect.top - 80);
-      window.scrollTo({ top: targetY, behavior: 'smooth' });
-      if (playBtn) {
-        setTimeout(() => playBtn.focus(), 350);
-      }
-    });
-  }
-
-  // Visibilidad del Sticky Player con limitación por requestAnimationFrame (cero layout thrashing)
-  if (stickyPlayer && playerCardEl) {
-    let isScrollTicking = false;
-
-    const updateStickyVisibility = () => {
-      if (typeof playerCardEl.getBoundingClientRect !== 'function') return;
-      const rect = playerCardEl.getBoundingClientRect();
-      const isPastControls = (rect.top < -100);
-      const isPastCard = (rect.bottom < 200);
-      const isScrolledDown = window.scrollY > 240;
-
-      if ((isPastControls || isPastCard) && isScrolledDown) {
-        setStickyVisible(true);
-      } else if (rect.top >= -60 || window.scrollY < 180) {
-        setStickyVisible(false);
-      }
-    };
-
-    const onScrollOrResizeThrottled = () => {
-      if (!isScrollTicking) {
-        if (typeof window.requestAnimationFrame === 'function') {
-          window.requestAnimationFrame(() => {
-            updateStickyVisibility();
-            isScrollTicking = false;
-          });
-        } else {
-          updateStickyVisibility();
-          isScrollTicking = false;
-        }
-        isScrollTicking = true;
-      }
-    };
-
-    if ('IntersectionObserver' in window) {
-      const stickyObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          const rect = entry.boundingClientRect;
-          if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 240) {
-            setStickyVisible(true);
-          } else if (entry.isIntersecting && rect.top > -60) {
-            setStickyVisible(false);
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        if (!NetworkMonitor.isOnline()) {
+          if (statusEl) {
+            statusEl.textContent = 'Sin conexión a internet';
+            statusEl.className = 'stream-status-tag is-error';
           }
-        });
-      }, { threshold: 0.1 });
-      stickyObserver.observe(playerCardEl);
-    }
-
-    window.addEventListener('scroll', onScrollOrResizeThrottled, { passive: true });
-    window.addEventListener('resize', onScrollOrResizeThrottled, { passive: true });
-    updateStickyVisibility();
-  }
-
-  // Eventos nativos del elemento de audio
-  audio.addEventListener('play', () => {
-    updatePlayPauseIcons(true);
-    updateStickyStatus('connecting', 'Conectando…');
-  });
-
-  audio.addEventListener('playing', () => {
-    isAutoRetrying = false;
-    retryAttempt = 0;
-    updatePlayPauseIcons(true);
-    updateStickyStatus('playing', 'En directo');
-    if (status) {
-      status.textContent = 'Conectado · Señal en directo';
-      status.className = 'stream-status-tag is-playing';
-    }
-    if (typeof fetchLiveTrack === 'function') {
-      fetchLiveTrack();
-    }
-    if (typeof updatePollingSchedule === 'function') {
-      updatePollingSchedule();
-    }
-  });
-
-  audio.addEventListener('waiting', () => {
-    updateStickyStatus('connecting', 'Conectando…');
-    if (status) {
-      status.textContent = 'Conectando con la señal…';
-      status.className = 'stream-status-tag is-connecting';
-    }
-  });
-
-  audio.addEventListener('stalled', () => {
-    if (audio && !audio.paused && NetworkMonitor.isOnline()) {
-      updateStickyStatus('connecting', 'Buffering…');
-      if (status) {
-        status.textContent = 'Almacenando búfer de señal…';
-        status.className = 'stream-status-tag is-connecting';
-      }
-    }
-  });
-
-  audio.addEventListener('pause', () => {
-    if (isAutoRetrying) return;
-    updatePlayPauseIcons(false);
-    updateStickyStatus('paused', 'En pausa');
-    if (status) {
-      if (!NetworkMonitor.isOnline() || wasPlayingBeforeOffline) {
-        status.textContent = 'Sin conexión a internet';
-        status.className = 'stream-status-tag is-error';
-        updateStickyStatus('error', 'Sin internet');
-      } else {
-        status.textContent = 'Señal en pausa';
-        status.className = 'stream-status-tag';
-      }
-    }
-    if (typeof updatePollingSchedule === 'function') {
-      updatePollingSchedule();
-    }
-  });
-
-  // Reintento con backoff exponencial para redes celulares intermitentes (2G/3G rural)
-  audio.addEventListener('error', () => {
-    if (!NetworkMonitor.isOnline()) {
-      if (status) {
-        status.textContent = 'Sin conexión a internet';
-        status.className = 'stream-status-tag is-error';
-      }
-      return;
-    }
-
-    if (retryAttempt >= MAX_AUTO_RETRIES) {
-      showFatalError();
-    } else {
-      retryAttempt++;
-      isAutoRetrying = true;
-      const backoffDelay = retryAttempt === 1 ? 2500 : (retryAttempt === 2 ? 5000 : 10000);
-
-      if (status) {
-        status.textContent = `Reconectando señal (${retryAttempt}/${MAX_AUTO_RETRIES})…`;
-        status.className = 'stream-status-tag is-connecting';
-      }
-      updateStickyStatus('connecting', 'Reconectando…');
-
-      if (retryTimeout) clearTimeout(retryTimeout);
-      retryTimeout = setTimeout(() => {
-        retryTimeout = null;
+          return;
+        }
+        isAutoRetrying = false;
+        retryAttempt = 0;
         playLiveStream().catch((err) => {
           if (err && err.name === 'AbortError') return;
-          if (retryAttempt >= MAX_AUTO_RETRIES) {
-            showFatalError();
-          }
+          showFatalError();
         });
-      }, backoffDelay);
-    }
-  });
-
-  // Eventos de conectividad del navegador
-  window.addEventListener('offline', () => {
-    if (retryTimeout) {
-      clearTimeout(retryTimeout);
-      retryTimeout = null;
-      isAutoRetrying = false;
-      retryAttempt = 0;
-    }
-    const isAudioPlaying = audio && !audio.paused;
-    if (isAudioPlaying) {
-      wasPlayingBeforeOffline = true;
-      audio.pause();
-    }
-    if (status) {
-      status.textContent = 'Sin conexión a internet';
-      status.className = 'stream-status-tag is-error';
-    }
-    updateStickyStatus('error', 'Sin internet');
-  });
-
-  window.addEventListener('online', () => {
-    if (wasPlayingBeforeOffline) {
-      wasPlayingBeforeOffline = false;
-      if (status) {
-        status.textContent = 'Conectando con la señal…';
-        status.className = 'stream-status-tag is-connecting';
+      } else {
+        if (typeof cancelSleepTimer === 'function') {
+          cancelSleepTimer();
+        }
+        stopPlayback();
       }
+    });
+
+    if (stickyPlayBtn) {
+      stickyPlayBtn.addEventListener('click', () => {
+        playBtn.click();
+      });
+    }
+
+    // Sincronización de volumen y guardado en almacenamiento local
+    audio.addEventListener('volumechange', updateMuteIcons);
+    for (const slider of [volumeSlider, stickyVolumeSlider]) {
+      if (!slider) continue;
+      slider.addEventListener('input', () => {
+        if (fadeEngine.isMidFade) {
+          fadeEngine.isMidFade = false;
+          fadeEngine.originalVolume = null;
+        }
+        audio.volume = Number(slider.value);
+        audio.muted = (audio.volume === 0);
+        StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
+        StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+        updateMuteIcons();
+      });
+    }
+
+    if (muteBtn) {
+      muteBtn.addEventListener('click', () => {
+        if (fadeEngine.isMidFade) {
+          fadeEngine.isMidFade = false;
+          fadeEngine.originalVolume = null;
+        }
+        audio.muted = !audio.muted;
+        if (!audio.muted && audio.volume === 0) {
+          audio.volume = 0.5;
+          if (volumeSlider) volumeSlider.value = 0.5;
+          if (stickyVolumeSlider) stickyVolumeSlider.value = 0.5;
+        }
+        StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+        StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
+        updateMuteIcons();
+      });
+    }
+
+    if (stickyMuteBtn) {
+      stickyMuteBtn.addEventListener('click', () => {
+        if (muteBtn) muteBtn.click();
+      });
+    }
+
+    // Desplazamiento suave al reproductor principal desde el sticky player
+    if (stickyTopBtn && playerCardEl) {
+      stickyTopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const cardRect = (typeof playerCardEl.getBoundingClientRect === 'function')
+          ? playerCardEl.getBoundingClientRect()
+          : { top: 0 };
+        const pageY = (typeof window.pageYOffset === 'number') ? window.pageYOffset : (window.scrollY || 0);
+        const targetY = Math.max(0, pageY + cardRect.top - 80);
+        if (typeof window.scrollTo === 'function') {
+          window.scrollTo({ top: targetY, behavior: 'smooth' });
+        }
+        if (playBtn && typeof playBtn.focus === 'function') {
+          setTimeout(() => playBtn.focus(), 350);
+        }
+      });
+    }
+
+    // Visibilidad del Sticky Player con limitación por requestAnimationFrame
+    if (stickyPlayer && playerCardEl) {
+      let isScrollTicking = false;
+
+      const updateStickyVisibility = () => {
+        if (typeof playerCardEl.getBoundingClientRect !== 'function') return;
+        const rect = playerCardEl.getBoundingClientRect();
+        const isPastControls = (rect.top < -100);
+        const isPastCard = (rect.bottom < 200);
+        const isScrolledDown = window.scrollY > 240;
+
+        if ((isPastControls || isPastCard) && isScrolledDown) {
+          setStickyVisible(true);
+        } else if (rect.top >= -60 || window.scrollY < 180) {
+          setStickyVisible(false);
+        }
+      };
+
+      const onScrollOrResizeThrottled = () => {
+        if (!isScrollTicking) {
+          if (typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(() => {
+              updateStickyVisibility();
+              isScrollTicking = false;
+            });
+          } else {
+            updateStickyVisibility();
+            isScrollTicking = false;
+          }
+          isScrollTicking = true;
+        }
+      };
+
+      if ('IntersectionObserver' in window) {
+        const stickyObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            const rect = entry.boundingClientRect;
+            if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 240) {
+              setStickyVisible(true);
+            } else if (entry.isIntersecting && rect.top > -60) {
+              setStickyVisible(false);
+            }
+          });
+        }, { threshold: 0.1 });
+        stickyObserver.observe(playerCardEl);
+      }
+
+      window.addEventListener('scroll', onScrollOrResizeThrottled, { passive: true });
+      window.addEventListener('resize', onScrollOrResizeThrottled, { passive: true });
+      updateStickyVisibility();
+    }
+
+    // Eventos nativos del elemento de audio
+    audio.addEventListener('play', () => {
+      updatePlayPauseIcons(true);
+      updateStickyStatus('connecting', 'Conectando…');
+    });
+
+    audio.addEventListener('playing', () => {
       isAutoRetrying = false;
       retryAttempt = 0;
-      playLiveStream().catch((err) => {
-        if (err && err.name === 'AbortError') return;
-        showFatalError();
-      });
-    } else if (status && audio && audio.paused) {
-      status.textContent = 'Señal en pausa';
-      status.className = 'stream-status-tag';
-    }
-  });
+      updatePlayPauseIcons(true);
+      updateStickyStatus('playing', 'En directo');
+      if (statusEl) {
+        statusEl.textContent = 'Conectado · Señal en directo';
+        statusEl.className = 'stream-status-tag is-playing';
+      }
+      if (typeof fetchLiveTrack === 'function') {
+        fetchLiveTrack();
+      }
+      if (typeof updatePollingSchedule === 'function') {
+        updatePollingSchedule();
+      }
+    });
 
-  // MediaSession API para controles del sistema
-  if ('mediaSession' in navigator) {
-    navigator.mediaSession.setActionHandler('play', () => {
+    audio.addEventListener('waiting', () => {
+      updateStickyStatus('connecting', 'Conectando…');
+      if (statusEl) {
+        statusEl.textContent = 'Conectando con la señal…';
+        statusEl.className = 'stream-status-tag is-connecting';
+      }
+    });
+
+    audio.addEventListener('stalled', () => {
+      if (audio && !audio.paused && NetworkMonitor.isOnline()) {
+        updateStickyStatus('connecting', 'Buffering…');
+        if (statusEl) {
+          statusEl.textContent = 'Almacenando búfer de señal…';
+          statusEl.className = 'stream-status-tag is-connecting';
+        }
+      }
+    });
+
+    audio.addEventListener('pause', () => {
+      if (isAutoRetrying) return;
+      updatePlayPauseIcons(false);
+      updateStickyStatus('paused', 'En pausa');
+      if (statusEl) {
+        if (!NetworkMonitor.isOnline() || wasPlayingBeforeOffline) {
+          statusEl.textContent = 'Sin conexión a internet';
+          statusEl.className = 'stream-status-tag is-error';
+          updateStickyStatus('error', 'Sin internet');
+        } else {
+          statusEl.textContent = 'Señal en pausa';
+          statusEl.className = 'stream-status-tag';
+        }
+      }
+      if (typeof updatePollingSchedule === 'function') {
+        updatePollingSchedule();
+      }
+    });
+
+    // Reintento con backoff exponencial para redes celulares intermitentes (2G/3G rural)
+    audio.addEventListener('error', () => {
       if (!NetworkMonitor.isOnline()) {
-        if (status) {
-          status.textContent = 'Sin conexión a internet';
-          status.className = 'stream-status-tag is-error';
+        if (statusEl) {
+          statusEl.textContent = 'Sin conexión a internet';
+          statusEl.className = 'stream-status-tag is-error';
         }
         return;
       }
-      isAutoRetrying = false;
-      retryAttempt = 0;
-      playLiveStream().catch((err) => {
-        if (err && err.name === 'AbortError') return;
+
+      if (retryAttempt >= MAX_AUTO_RETRIES) {
         showFatalError();
-      });
+      } else {
+        retryAttempt++;
+        isAutoRetrying = true;
+        const backoffDelay = retryAttempt === 1 ? 2500 : (retryAttempt === 2 ? 5000 : 10000);
+
+        if (statusEl) {
+          statusEl.textContent = 'Reconectando señal (' + retryAttempt + '/' + MAX_AUTO_RETRIES + ')…';
+          statusEl.className = 'stream-status-tag is-connecting';
+        }
+        updateStickyStatus('connecting', 'Reconectando…');
+
+        if (retryTimeout) clearTimeout(retryTimeout);
+        retryTimeout = setTimeout(() => {
+          retryTimeout = null;
+          playLiveStream().catch((err) => {
+            if (err && err.name === 'AbortError') return;
+            if (retryAttempt >= MAX_AUTO_RETRIES) {
+              showFatalError();
+            }
+          });
+        }, backoffDelay);
+      }
     });
 
-    navigator.mediaSession.setActionHandler('pause', () => {
-      if (typeof cancelSleepTimer === 'function') {
-        cancelSleepTimer();
+    // Eventos de conectividad del navegador
+    window.addEventListener('offline', () => {
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+        retryTimeout = null;
+        isAutoRetrying = false;
+        retryAttempt = 0;
       }
-      stopPlayback();
+      const isAudioPlaying = audio && !audio.paused;
+      if (isAudioPlaying) {
+        wasPlayingBeforeOffline = true;
+        audio.pause();
+      }
+      if (statusEl) {
+        statusEl.textContent = 'Sin conexión a internet';
+        statusEl.className = 'stream-status-tag is-error';
+      }
+      updateStickyStatus('error', 'Sin internet');
+    });
+
+    window.addEventListener('online', () => {
+      if (wasPlayingBeforeOffline) {
+        wasPlayingBeforeOffline = false;
+        if (statusEl) {
+          statusEl.textContent = 'Conectando con la señal…';
+          statusEl.className = 'stream-status-tag is-connecting';
+        }
+        isAutoRetrying = false;
+        retryAttempt = 0;
+        playLiveStream().catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          showFatalError();
+        });
+      } else if (statusEl && audio && audio.paused) {
+        statusEl.textContent = 'Señal en pausa';
+        statusEl.className = 'stream-status-tag';
+      }
+    });
+
+    // MediaSession API para controles del sistema
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (!NetworkMonitor.isOnline()) {
+          if (statusEl) {
+            statusEl.textContent = 'Sin conexión a internet';
+            statusEl.className = 'stream-status-tag is-error';
+          }
+          return;
+        }
+        isAutoRetrying = false;
+        retryAttempt = 0;
+        playLiveStream().catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          showFatalError();
+        });
+      });
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (typeof cancelSleepTimer === 'function') {
+          cancelSleepTimer();
+        }
+        stopPlayback();
+      });
+    }
+
+    // Atajos globales de teclado (Espacio, K, M) respetando accesibilidad
+    window.addEventListener('keydown', (e) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
+
+      const active = document.activeElement;
+      if (active) {
+        const tagName = active.tagName;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || active.isContentEditable) {
+          return;
+        }
+      }
+
+      const isSpace = (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space');
+      const isKeyK = (e.key === 'k' || e.key === 'K');
+      const isKeyM = (e.key === 'm' || e.key === 'M');
+
+      if (isSpace) {
+        const isInteractive = active && (
+          active.tagName === 'BUTTON' ||
+          active.tagName === 'A' ||
+          active.tagName === 'SUMMARY' ||
+          active.tagName === 'CANVAS' ||
+          active.tagName === 'IFRAME' ||
+          active.id === 'fish-canvas' ||
+          (typeof active.getAttribute === 'function' && (
+            active.getAttribute('role') === 'button' ||
+            active.getAttribute('role') === 'application'
+          ))
+        );
+
+        if (isInteractive) return;
+
+        e.preventDefault();
+        if (playBtn) playBtn.click();
+        return;
+      }
+
+      if (isKeyK) {
+        e.preventDefault();
+        if (playBtn) playBtn.click();
+        return;
+      }
+
+      if (isKeyM) {
+        e.preventDefault();
+        if (muteBtn) muteBtn.click();
+        return;
+      }
     });
   }
 
-  // Atajos globales de teclado (Espacio, K, M) respetando accesibilidad
-  window.addEventListener('keydown', (e) => {
-    if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
+  init();
 
-    const active = document.activeElement;
-    if (active) {
-      const tagName = active.tagName;
-      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || active.isContentEditable) {
-        return;
-      }
-    }
+  return {
+    getAudioElement: () => audio,
+    isPlaying: () => !!(audio && !audio.paused),
+    playLiveStream,
+    stopPlayback,
+    setStickyVisible,
+    syncVolumeUI: updateMuteIcons,
+    syncPlayPauseUI: updatePlayPauseIcons,
+    updateStickyStatus,
+    updateMuteIcons,
+    updatePlayPauseIcons,
+    setStatus,
+    fade: fadeVolume,
+    fadeVolume,
+    restoreFade: restoreVolume,
+    restoreVolume,
+    isFading: () => fadeEngine.isMidFade,
+    handleFatalError: showFatalError
+  };
+})();
 
-    const isSpace = (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space');
-    const isKeyK = (e.key === 'k' || e.key === 'K');
-    const isKeyM = (e.key === 'm' || e.key === 'M');
+// Alias de compatibilidad global para tests y scripts
+const audio = AudioController.getAudioElement();
+const stickyTrackTitle = document.querySelector('#sticky-track-title');
+const stickyWaBtn = document.querySelector('#sticky-wa-btn');
 
-    if (isSpace) {
-      const isInteractive = active && (
-        active.tagName === 'BUTTON' ||
-        active.tagName === 'A' ||
-        active.tagName === 'SUMMARY' ||
-        active.tagName === 'CANVAS' ||
-        active.tagName === 'IFRAME' ||
-        active.id === 'fish-canvas' ||
-        (typeof active.getAttribute === 'function' && (
-          active.getAttribute('role') === 'button' ||
-          active.getAttribute('role') === 'application'
-        ))
-      );
+function updateStickyStatus(type, label) {
+  return AudioController.updateStickyStatus(type, label);
+}
 
-      if (isInteractive) return;
+function updateMuteIcons() {
+  return AudioController.syncVolumeUI();
+}
 
-      e.preventDefault();
-      if (playBtn) playBtn.click();
-      return;
-    }
+function updatePlayPauseIcons(isPlaying) {
+  return AudioController.syncPlayPauseUI(isPlaying);
+}
 
-    if (isKeyK) {
-      e.preventDefault();
-      if (playBtn) playBtn.click();
-      return;
-    }
+function setStickyVisible(isVisible) {
+  return AudioController.setStickyVisible(isVisible);
+}
 
-    if (isKeyM) {
-      e.preventDefault();
-      if (muteBtn) muteBtn.click();
-      return;
-    }
-  });
+function stopPlayback() {
+  return AudioController.stopPlayback();
+}
+
+function playLiveStream() {
+  return AudioController.playLiveStream();
 }
 
 // --- 5. MÓDULO TEMPORIZADOR DE APAGADO (SleepTimer) ---
-const sleepTimerBtn = document.querySelector('#sleep-timer-btn');
-const sleepTimerMenu = document.querySelector('#sleep-timer-menu');
-const sleepTimerText = document.querySelector('#sleep-timer-text');
-const sleepCancelBtn = document.querySelector('#sleep-cancel-btn');
-const sleepMenuItems = document.querySelectorAll('.sleep-menu-item[data-minutes]');
+/**
+ * Módulo de apagado programado.
+ * Gestiona el menú, cuenta regresiva y orquesta el apagado gradual delegando
+ * completamente el control de volumen, desvanecimiento y estados a AudioController.
+ */
+const SleepTimer = (function() {
+  const sleepTimerBtn = document.querySelector('#sleep-timer-btn');
+  const sleepTimerMenu = document.querySelector('#sleep-timer-menu');
+  const sleepTimerText = document.querySelector('#sleep-timer-text');
+  const sleepCancelBtn = document.querySelector('#sleep-cancel-btn');
+  const sleepMenuItems = document.querySelectorAll ? document.querySelectorAll('.sleep-menu-item[data-minutes]') : [];
 
-let sleepTimerId = null;
-let sleepEndTime = null;
-let originalVolumeBeforeFade = null;
-let isMidFade = false;
+  let sleepTimerId = null;
+  let sleepEndTime = null;
+
+  function resetSleepTimerUI() {
+    if (sleepTimerText) sleepTimerText.textContent = 'Dormir';
+    if (sleepTimerBtn) {
+      sleepTimerBtn.classList.remove('is-active');
+      sleepTimerBtn.setAttribute('title', 'Temporizador de apagado');
+      sleepTimerBtn.setAttribute('aria-label', 'Dormir — Temporizador de apagado');
+    }
+    if (sleepCancelBtn) sleepCancelBtn.disabled = true;
+    if (sleepMenuItems && sleepMenuItems.forEach) {
+      sleepMenuItems.forEach(item => item.classList.remove('is-selected'));
+    }
+  }
+
+  function cancelSleepTimer() {
+    if (sleepTimerId) {
+      clearInterval(sleepTimerId);
+      sleepTimerId = null;
+    }
+    sleepEndTime = null;
+    AudioController.restoreFade();
+    resetSleepTimerUI();
+  }
+
+  function startSleepTimer(minutes) {
+    cancelSleepTimer();
+    if (!AudioController.getAudioElement()) return;
+    const durationMs = minutes * 60 * 1000;
+    sleepEndTime = Date.now() + durationMs;
+
+    if (sleepTimerBtn) sleepTimerBtn.classList.add('is-active');
+    if (sleepCancelBtn) sleepCancelBtn.disabled = false;
+
+    if (sleepMenuItems && sleepMenuItems.forEach) {
+      sleepMenuItems.forEach(item => {
+        const itemMins = parseInt(item.dataset && item.dataset.minutes, 10);
+        if (itemMins === minutes) {
+          item.classList.add('is-selected');
+        } else {
+          item.classList.remove('is-selected');
+        }
+      });
+    }
+
+    const updateCountdown = () => {
+      const remainingMs = sleepEndTime - Date.now();
+      const remainingSec = Math.round(remainingMs / 1000);
+
+      if (remainingSec <= 0) {
+        clearInterval(sleepTimerId);
+        sleepTimerId = null;
+        AudioController.stopPlayback();
+        AudioController.restoreFade();
+        resetSleepTimerUI();
+        AudioController.setStatus('', 'Temporizador finalizado · En pausa');
+        return;
+      }
+
+      const mins = Math.floor(remainingSec / 60);
+      const secs = remainingSec % 60;
+      const label = mins > 0 ? mins + 'm' : secs + 's';
+      if (sleepTimerText) sleepTimerText.textContent = label;
+      if (sleepTimerBtn) {
+        sleepTimerBtn.setAttribute('title', 'Apagado programado en ' + label);
+        sleepTimerBtn.setAttribute('aria-label', 'Dormir — ' + label + ' restantes para apagar la transmisión');
+      }
+
+      // Desvanecimiento suave en los últimos 30 segundos encapsulado en AudioController
+      if (remainingSec <= 30) {
+        const factor = Math.max(0, remainingSec / 30);
+        AudioController.fade(factor);
+      }
+    };
+
+    updateCountdown();
+    sleepTimerId = setInterval(updateCountdown, 1000);
+  }
+
+  function init() {
+    if (sleepTimerBtn && sleepTimerMenu) {
+      sleepTimerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = sleepTimerMenu.hasAttribute('hidden');
+        if (isHidden) {
+          sleepTimerMenu.removeAttribute('hidden');
+          sleepTimerBtn.setAttribute('aria-expanded', 'true');
+        } else {
+          sleepTimerMenu.setAttribute('hidden', '');
+          sleepTimerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!sleepTimerMenu.contains(e.target) && e.target !== sleepTimerBtn) {
+          sleepTimerMenu.setAttribute('hidden', '');
+          sleepTimerBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !sleepTimerMenu.hasAttribute('hidden')) {
+          sleepTimerMenu.setAttribute('hidden', '');
+          sleepTimerBtn.setAttribute('aria-expanded', 'false');
+          sleepTimerBtn.focus();
+        }
+      });
+
+      if (sleepMenuItems && sleepMenuItems.forEach) {
+        sleepMenuItems.forEach(item => {
+          item.addEventListener('click', () => {
+            const mins = parseInt(item.dataset && item.dataset.minutes, 10);
+            if (mins > 0) startSleepTimer(mins);
+            else cancelSleepTimer();
+            sleepTimerMenu.setAttribute('hidden', '');
+            sleepTimerBtn.setAttribute('aria-expanded', 'false');
+          });
+        });
+      }
+    }
+  }
+
+  init();
+
+  return {
+    start: startSleepTimer,
+    cancel: cancelSleepTimer,
+    resetUI: resetSleepTimerUI,
+    isActive: () => sleepTimerId !== null
+  };
+})();
 
 function resetSleepTimerUI() {
-  if (sleepTimerText) sleepTimerText.textContent = 'Dormir';
-  if (sleepTimerBtn) {
-    sleepTimerBtn.classList.remove('is-active');
-    sleepTimerBtn.setAttribute('title', 'Temporizador de apagado');
-    sleepTimerBtn.setAttribute('aria-label', 'Dormir — Temporizador de apagado');
-  }
-  if (sleepCancelBtn) sleepCancelBtn.disabled = true;
-  sleepMenuItems.forEach(item => item.classList.remove('is-selected'));
+  return SleepTimer.resetUI();
 }
 
 function cancelSleepTimer() {
-  if (sleepTimerId) {
-    clearInterval(sleepTimerId);
-    sleepTimerId = null;
-  }
-  sleepEndTime = null;
-  if (isMidFade && originalVolumeBeforeFade !== null && audio) {
-    audio.volume = originalVolumeBeforeFade;
-    if (volumeSlider) volumeSlider.value = originalVolumeBeforeFade;
-    updateMuteIcons();
-  }
-  isMidFade = false;
-  originalVolumeBeforeFade = null;
-  resetSleepTimerUI();
+  return SleepTimer.cancel();
 }
 
 function startSleepTimer(minutes) {
-  cancelSleepTimer();
-  if (!audio) return;
-  const durationMs = minutes * 60 * 1000;
-  sleepEndTime = Date.now() + durationMs;
-  originalVolumeBeforeFade = audio.volume;
-  isMidFade = false;
-
-  if (sleepTimerBtn) sleepTimerBtn.classList.add('is-active');
-  if (sleepCancelBtn) sleepCancelBtn.disabled = false;
-
-  sleepMenuItems.forEach(item => {
-    if (parseInt(item.dataset.minutes, 10) === minutes) {
-      item.classList.add('is-selected');
-    } else {
-      item.classList.remove('is-selected');
-    }
-  });
-
-  const updateCountdown = () => {
-    const remainingMs = sleepEndTime - Date.now();
-    const remainingSec = Math.round(remainingMs / 1000);
-
-    if (remainingSec <= 0) {
-      clearInterval(sleepTimerId);
-      sleepTimerId = null;
-      isMidFade = false;
-      stopPlayback();
-      if (originalVolumeBeforeFade !== null) {
-        audio.volume = originalVolumeBeforeFade;
-        if (volumeSlider) volumeSlider.value = originalVolumeBeforeFade;
-        updateMuteIcons();
-      }
-      resetSleepTimerUI();
-      if (status) {
-        status.textContent = 'Temporizador finalizado · En pausa';
-        status.className = 'stream-status-tag';
-      }
-      return;
-    }
-
-    const mins = Math.floor(remainingSec / 60);
-    const secs = remainingSec % 60;
-    const label = mins > 0 ? `${mins}m` : `${secs}s`;
-    if (sleepTimerText) sleepTimerText.textContent = label;
-    if (sleepTimerBtn) {
-      sleepTimerBtn.setAttribute('title', `Apagado programado en ${label}`);
-      sleepTimerBtn.setAttribute('aria-label', `Dormir — ${label} restantes para apagar la transmisión`);
-    }
-
-    // Desvanecimiento suave en los últimos 30 segundos
-    if (remainingSec <= 30) {
-      isMidFade = true;
-      const factor = Math.max(0, remainingSec / 30);
-      const faded = originalVolumeBeforeFade * factor;
-      audio.volume = faded;
-      if (volumeSlider) volumeSlider.value = faded;
-      updateMuteIcons();
-    }
-  };
-
-  updateCountdown();
-  sleepTimerId = setInterval(updateCountdown, 1000);
-}
-
-if (sleepTimerBtn && sleepTimerMenu) {
-  sleepTimerBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isHidden = sleepTimerMenu.hasAttribute('hidden');
-    if (isHidden) {
-      sleepTimerMenu.removeAttribute('hidden');
-      sleepTimerBtn.setAttribute('aria-expanded', 'true');
-    } else {
-      sleepTimerMenu.setAttribute('hidden', '');
-      sleepTimerBtn.setAttribute('aria-expanded', 'false');
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!sleepTimerMenu.contains(e.target) && e.target !== sleepTimerBtn) {
-      sleepTimerMenu.setAttribute('hidden', '');
-      sleepTimerBtn.setAttribute('aria-expanded', 'false');
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !sleepTimerMenu.hasAttribute('hidden')) {
-      sleepTimerMenu.setAttribute('hidden', '');
-      sleepTimerBtn.setAttribute('aria-expanded', 'false');
-      sleepTimerBtn.focus();
-    }
-  });
-
-  sleepMenuItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const mins = parseInt(item.dataset.minutes, 10);
-      if (mins > 0) startSleepTimer(mins);
-      else cancelSleepTimer();
-      sleepTimerMenu.setAttribute('hidden', '');
-      sleepTimerBtn.setAttribute('aria-expanded', 'false');
-    });
-  });
+  return SleepTimer.start(minutes);
 }
 
 // --- 6. MÓDULO HISTORIAL DE TEMAS RECIENTES (TrackHistory) ---
@@ -1105,7 +1234,7 @@ function updatePollingSchedule() {
 
   if (!NetworkMonitor.isOnline()) return;
 
-  const isPlaying = audio && !audio.paused;
+  const isPlaying = AudioController.isPlaying();
   const isHidden = document.hidden;
   const isSaveData = NetworkMonitor.isSaveDataEnabled();
 
