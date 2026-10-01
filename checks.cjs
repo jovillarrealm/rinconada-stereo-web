@@ -36,7 +36,8 @@ async function checkApp(stored) {
     '#radio', '#play-btn', '#volume-slider', '#sticky-volume-slider',
     '#mute-btn', '#sticky-mute-btn', '#recent-tracks-list',
     '#sticky-player', '#audio-status', '#weather-card', '#reproductor',
-    '#sticky-top-btn', '#sleep-timer-btn', '#sleep-timer-text', '#sleep-cancel-btn'
+    '#sticky-top-btn', '#sleep-timer-btn', '#sleep-timer-text', '#sleep-cancel-btn',
+    '#pacha-clock'
   ].map(id => [id, new Element()]));
   const radio = elements['#radio'];
   radio.volume = 0.9;
@@ -122,6 +123,45 @@ async function checkApp(stored) {
   vm.runInContext('fetchLiveTrack()', context);
   assert.equal(document.head.children.length, headChildCount, 'fetchLiveTrack must not inject scripts when offline');
   context.navigator.onLine = true;
+
+  // Local clock (La Pacha, America/Bogota) runtime assertions
+  const pachaClock = elements['#pacha-clock'];
+  assert.ok(pachaClock.textContent !== '--:--', '#pacha-clock must initialize immediately on load');
+  assert.ok(pachaClock.hasAttribute('datetime'), '#pacha-clock must set datetime attribute');
+  assert.ok(/\d{1,2}:\d{2}\s+(?:a\.\s*m\.|p\.\s*m\.)/i.test(pachaClock.textContent),
+    `#pacha-clock text must be formatted in 12-hour format (got '${pachaClock.textContent}')`);
+
+  // Assert clock formatting uses America/Bogota (UTC-5)
+  // 2026-10-01T20:30:00Z is 15:30 in Bogota -> 3:30 p. m.
+  const formattedAfternoon = vm.runInContext("formatBogotaTime(new Date('2026-10-01T20:30:00Z'))", context);
+  assert.ok(/3:30\s+p\.\s*m\./i.test(formattedAfternoon),
+    `formatBogotaTime must format 20:30 UTC as 3:30 p. m. in America/Bogota (got '${formattedAfternoon}')`);
+
+  // 2026-10-01T15:05:00Z is 10:05 in Bogota -> 10:05 a. m.
+  const formattedMorning = vm.runInContext("formatBogotaTime(new Date('2026-10-01T15:05:00Z'))", context);
+  assert.ok(/10:05\s+a\.\s*m\./i.test(formattedMorning),
+    `formatBogotaTime must format 15:05 UTC as 10:05 a. m. in America/Bogota (got '${formattedMorning}')`);
+
+  // Assert manual UTC-5 fallback when Intl is missing
+  const formattedFallback = vm.runInContext(`
+    (() => {
+      const savedIntl = Intl;
+      try {
+        Intl = undefined;
+        return formatBogotaTime(new Date('2026-10-01T20:30:00Z'));
+      } finally {
+        Intl = savedIntl;
+      }
+    })()
+  `, context);
+  assert.ok(/3:30\s+p\.\s*m\./i.test(formattedFallback),
+    `formatBogotaTime fallback must format as 3:30 p. m. without Intl (got '${formattedFallback}')`);
+
+  // Page visibility API handler
+  document.visibilityState = 'hidden';
+  document.dispatchEvent(new Event('visibilitychange'));
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
 }
 
 async function checkWorker() {
@@ -218,6 +258,22 @@ function checkAssetsAndStyles() {
     'index.html should not include heavy 192x192 or 512x512 icons in head');
   assert.ok(html.includes('sha256-0aUJUYOhhM/vaekn9gpZ6JIdb61dQ0OdZ4f+9RNrn5U='),
     'index.html CSP must include HTML5 LF hash for theme script');
+
+  // Verify #pacha-clock element in index.html markup
+  const clockMatch = html.match(/<time[^>]+id=["']pacha-clock["'][^>]*>([\s\S]*?)<\/time>/);
+  assert.ok(clockMatch, 'index.html must contain #pacha-clock as a <time> element');
+  assert.ok(
+    /aria-label=["']Hora local en La Pacha, Magdalena["']/.test(clockMatch[0]),
+    '#pacha-clock must specify aria-label="Hora local en La Pacha, Magdalena"'
+  );
+  assert.ok(
+    /class=["'][^"']*weather-clock[^"']*["']/.test(clockMatch[0]),
+    '#pacha-clock must have class weather-clock'
+  );
+  assert.ok(
+    /<aside[^>]+id=["']clima-regional["'][^>]*>[\s\S]*?<time[^>]+id=["']pacha-clock["']/.test(html),
+    '#pacha-clock must be inside #clima-regional aside'
+  );
 
   const page404 = source('404.html');
   assert.ok(page404.includes('srcset="assets/logo-rinconada.avif"'), '404.html must provide AVIF logo source');

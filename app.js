@@ -1839,6 +1839,130 @@ if (weatherSection && 'IntersectionObserver' in window) {
   loadOpenMeteoWeather();
 }
 
+// --- 9b. MÓDULO DE RELOJ LOCAL DE LA PACHA (PachaClock) ---
+/**
+ * Formatea la hora en zona horaria America/Bogota (UTC-5) en formato 12 horas.
+ * Utiliza Intl.DateTimeFormat si está disponible o calcula el desfase manual UTC-5.
+ * @param {Date} [date]
+ * @returns {string}
+ */
+function formatBogotaTime(date = new Date()) {
+  try {
+    if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+      return new Intl.DateTimeFormat('es-CO', {
+        timeZone: 'America/Bogota',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }).format(date);
+    }
+  } catch (e) {
+    // Si Intl o timeZone falla, recurrir a la hora manual UTC-5
+  }
+  const hours24 = (date.getUTCHours() - 5 + 24) % 24;
+  const minutes = date.getUTCMinutes();
+  const hours12 = hours24 % 12 || 12;
+  const ampm = hours24 < 12 ? 'a. m.' : 'p. m.';
+  return `${hours12}:${String(minutes).padStart(2, '0')} ${ampm}`;
+}
+
+/**
+ * Obtiene la hora en formato 24 horas (HH:mm) para el atributo datetime de <time>.
+ * @param {Date} [date]
+ * @returns {string}
+ */
+function getBogotaTimeString24(date = new Date()) {
+  const hours24 = (date.getUTCHours() - 5 + 24) % 24;
+  const minutes = date.getUTCMinutes();
+  return `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+const PachaClock = (() => {
+  let timerId = null;
+  let intervalId = null;
+  let clockEl = null;
+
+  function clearTimers() {
+    if (timerId !== null) {
+      clearTimeout(timerId);
+      timerId = null;
+    }
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  }
+
+  function getElement() {
+    if (!clockEl && typeof document !== 'undefined') {
+      clockEl = document.querySelector('#pacha-clock');
+    }
+    return clockEl;
+  }
+
+  function update() {
+    const el = getElement();
+    if (!el) return;
+    const now = new Date();
+    el.textContent = formatBogotaTime(now);
+    el.setAttribute('datetime', getBogotaTimeString24(now));
+  }
+
+  function start() {
+    clearTimers();
+    update();
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return;
+    }
+    const now = new Date();
+    const delay = Math.max(50, (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50);
+    timerId = setTimeout(() => {
+      update();
+      intervalId = setInterval(update, 60000);
+    }, delay);
+  }
+
+  function stop() {
+    clearTimers();
+  }
+
+  function init() {
+    clockEl = null;
+    start();
+  }
+
+  return {
+    init,
+    start,
+    stop,
+    update,
+    formatTime: formatBogotaTime,
+    getTime24: getBogotaTimeString24
+  };
+})();
+
+function initPachaClock() {
+  PachaClock.init();
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPachaClock);
+  } else {
+    initPachaClock();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      PachaClock.stop();
+    } else if (document.visibilityState === 'visible') {
+      PachaClock.start();
+    }
+  });
+}
+
+
+
 // --- 10. MÓDULO CIÉNAGA INTERACTIVA (FishPond) ---
 // Simulación Canvas 2D optimizada para GPU móvil (DPR limitado a 2, sin lecturas de DOM en bucle)
 (function initFishPond() {
