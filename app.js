@@ -1739,8 +1739,7 @@ const ChatLoader = (() => {
 
   return {
     loadChat,
-    toggleChat,
-    isLoaded: () => chatLoaded
+    toggleChat
   };
 })();
 
@@ -1936,11 +1935,21 @@ function formatBogotaTime(date = new Date()) {
   } catch (e) {
     // Si Intl o timeZone falla, recurrir a la hora manual UTC-5
   }
-  const hours24 = (date.getUTCHours() - 5 + 24) % 24;
-  const minutes = date.getUTCMinutes();
+  const { hours24, minutes } = getBogotaTimeParts(date);
   const hours12 = hours24 % 12 || 12;
   const ampm = hours24 < 12 ? 'a. m.' : 'p. m.';
   return `${hours12}:${String(minutes).padStart(2, '0')} ${ampm}`;
+}
+
+/**
+ * Desglosa la hora y minutos en zona horaria UTC-5 (America/Bogota).
+ * @param {Date} [date]
+ * @returns {{ hours24: number, minutes: number }}
+ */
+function getBogotaTimeParts(date = new Date()) {
+  const hours24 = (date.getUTCHours() - 5 + 24) % 24;
+  const minutes = date.getUTCMinutes();
+  return { hours24, minutes };
 }
 
 /**
@@ -1949,8 +1958,7 @@ function formatBogotaTime(date = new Date()) {
  * @returns {string}
  */
 function getBogotaTimeString24(date = new Date()) {
-  const hours24 = (date.getUTCHours() - 5 + 24) % 24;
-  const minutes = date.getUTCMinutes();
+  const { hours24, minutes } = getBogotaTimeParts(date);
   return `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
@@ -2018,15 +2026,15 @@ const PachaClock = (() => {
   };
 })();
 
-function initPachaClock() {
-  PachaClock.init();
+if (typeof window !== 'undefined') {
+  window.PachaClock = PachaClock;
 }
 
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPachaClock);
+    document.addEventListener('DOMContentLoaded', () => PachaClock.init());
   } else {
-    initPachaClock();
+    PachaClock.init();
   }
 
   document.addEventListener('visibilitychange', () => {

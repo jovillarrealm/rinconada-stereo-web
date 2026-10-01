@@ -55,8 +55,8 @@
   --weather-sub: #5c728e;
   --weather-divider: #e4ecf6;
   --weather-clock-bg: #092140;
-  --weather-clock-color: #ffd000;
-  --weather-clock-border: rgba(255, 208, 0, 0.35);
+  --weather-clock-color: #f2ce6c;
+  --weather-clock-border: rgba(242, 206, 108, 0.35);
 
   /* Sección 03 Contacto y Footer */
   --contact-bg: #092140;
