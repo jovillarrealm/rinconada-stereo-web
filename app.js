@@ -1629,46 +1629,125 @@ if (typeof window !== 'undefined') {
 }
 
 // --- 8. MÓDULO CARGA DIFERIDA DE CHAT (ChatLoader) ---
-const chatIframe = document.querySelector('#chat iframe[data-src]');
-if (chatIframe) {
+const ChatLoader = (() => {
+  const chatCard = document.querySelector('#chat');
+  const chatToggleBtn = document.querySelector('#chat-toggle-btn');
+  const chatDrawer = document.querySelector('#chat-drawer');
+
+  const getChatIframe = () => {
+    return document.querySelector('#chat iframe[data-src]') ||
+           document.querySelector('#chat-drawer iframe[data-src]') ||
+           document.querySelector('#chat-drawer iframe') ||
+           document.querySelector('#chat iframe');
+  };
+
   let chatLoaded = false;
+
   const loadChat = () => {
     if (chatLoaded) return;
-    chatLoaded = true;
-    const realSrc = chatIframe.getAttribute('data-src');
+    const iframe = getChatIframe();
+    if (!iframe) return;
+    const realSrc = iframe.getAttribute('data-src');
     if (realSrc) {
-      chatIframe.src = realSrc;
-      chatIframe.removeAttribute('data-src');
+      iframe.src = realSrc;
+      iframe.setAttribute('src', realSrc);
+      iframe.removeAttribute('data-src');
+      chatLoaded = true;
     }
   };
 
-  const chatCard = document.querySelector('#chat');
-  if (chatCard) {
-    ['pointerenter', 'touchstart', 'focusin', 'click'].forEach(evt => {
-      chatCard.addEventListener(evt, loadChat, { once: true, passive: true });
-    });
+  const isWideScreen = () => {
+    if (typeof window === 'undefined') return false;
+    if (typeof window.matchMedia === 'function') {
+      return window.matchMedia('(min-width: 901px)').matches;
+    }
+    return typeof window.innerWidth === 'number' ? window.innerWidth > 900 : false;
+  };
+
+  const toggleChat = (forceOpen) => {
+    if (!chatCard || !chatToggleBtn) return;
+    const isCurrentlyOpen = chatCard.classList.contains('is-open');
+    const willOpen = typeof forceOpen === 'boolean' ? forceOpen : !isCurrentlyOpen;
+
+    chatCard.classList.toggle('is-open', willOpen);
+    chatToggleBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    chatToggleBtn.setAttribute('title', willOpen ? 'Cerrar chat en vivo' : 'Abrir chat en vivo');
+
+    const toggleText = chatToggleBtn.querySelector ? chatToggleBtn.querySelector('.chat-toggle-text') : null;
+    if (toggleText) {
+      toggleText.textContent = willOpen ? 'Cerrar Chat' : 'Abrir Chat en vivo';
+    }
+
+    const toggleArrow = chatToggleBtn.querySelector ? chatToggleBtn.querySelector('.chat-toggle-arrow') : null;
+    if (toggleArrow) {
+      toggleArrow.textContent = willOpen ? '▲' : '▼';
+    }
+
+    if (willOpen) {
+      loadChat();
+    }
+  };
+
+  if (chatToggleBtn) {
+    chatToggleBtn.addEventListener('click', () => toggleChat());
   }
 
-  // En conexiones lentas o Save-Data, solo cargar el chat si el usuario interactúa explícitamente
-  if (!NetworkMonitor.isSaveDataEnabled()) {
-    if ('IntersectionObserver' in window && chatCard) {
-      const chatObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            loadChat();
-            observer.disconnect();
-          }
-        });
-      }, { rootMargin: '250px 0px' });
-      chatObserver.observe(chatCard);
-    } else {
-      if ('requestIdleCallback' in window) {
+  if (chatCard) {
+    // En escritorio, la interacción directa con la tarjeta carga el chat
+    ['pointerenter', 'focusin'].forEach(evt => {
+      chatCard.addEventListener(evt, () => {
+        if (isWideScreen()) {
+          loadChat();
+        }
+      }, { once: true, passive: true });
+    });
+
+    const setupDesktopLazyLoad = () => {
+      if (typeof NetworkMonitor !== 'undefined' && NetworkMonitor.isSaveDataEnabled && NetworkMonitor.isSaveDataEnabled()) {
+        return;
+      }
+      if ('IntersectionObserver' in window) {
+        const chatObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              loadChat();
+              observer.disconnect();
+            }
+          });
+        }, { rootMargin: '250px 0px' });
+        chatObserver.observe(chatCard);
+      } else if ('requestIdleCallback' in window) {
         window.requestIdleCallback(() => setTimeout(loadChat, 1500), { timeout: 4000 });
       } else {
         window.addEventListener('load', () => setTimeout(loadChat, 2000), { once: true });
       }
+    };
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const desktopQuery = window.matchMedia('(min-width: 901px)');
+      if (desktopQuery.matches) {
+        setupDesktopLazyLoad();
+      } else if (desktopQuery.addEventListener) {
+        desktopQuery.addEventListener('change', (e) => {
+          if (e.matches) {
+            setupDesktopLazyLoad();
+          }
+        }, { once: true });
+      }
+    } else if (isWideScreen()) {
+      setupDesktopLazyLoad();
     }
   }
+
+  return {
+    loadChat,
+    toggleChat,
+    isLoaded: () => chatLoaded
+  };
+})();
+
+if (typeof window !== 'undefined') {
+  window.ChatLoader = ChatLoader;
 }
 
 // --- 9. MÓDULO DE PRONÓSTICO REGIONAL CON CACHÉ (WeatherService) ---

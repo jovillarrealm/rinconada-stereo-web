@@ -348,10 +348,17 @@
 
           <aside class="chat-card" id="chat" aria-labelledby="chat-title">
             <h2 id="chat-title">Chat en vivo</h2>
-            <iframe data-src="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs" title="Chat de Rinconada Stereo en Cbox" width="100%" height="460" loading="lazy" allow="autoplay; unload"></iframe>
-            <noscript>
-              <iframe src="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs" title="Chat de Rinconada Stereo en Cbox" width="100%" height="460" allow="autoplay; unload"></iframe>
-            </noscript>
+            <button class="chat-toggle-btn" id="chat-toggle-btn" type="button" aria-expanded="false" aria-controls="chat-drawer" title="Abrir chat en vivo">
+              <span class="chat-toggle-icon" aria-hidden="true">💬</span>
+              <span class="chat-toggle-text">Abrir Chat en vivo</span>
+              <span class="chat-toggle-arrow" aria-hidden="true">▼</span>
+            </button>
+            <div class="chat-drawer" id="chat-drawer">
+              <iframe data-src="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs" title="Chat de Rinconada Stereo en Cbox" width="100%" height="460" loading="lazy" allow="autoplay; unload"></iframe>
+              <noscript>
+                <iframe src="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs" title="Chat de Rinconada Stereo en Cbox" width="100%" height="460" allow="autoplay; unload"></iframe>
+              </noscript>
+            </div>
           </aside>
         </div>
       </section>
