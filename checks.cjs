@@ -282,6 +282,25 @@ function checkAssetsAndStyles() {
   const manifest = JSON.parse(source('manifest.webmanifest'));
   assert.ok(manifest.icons.some(i => i.sizes === '192x192'), 'manifest.webmanifest must preserve 192x192 icon');
   assert.ok(manifest.icons.some(i => i.sizes === '512x512'), 'manifest.webmanifest must preserve 512x512 icon');
+
+  // Ticket 1: Canvas Fish Pond retired & Static SVG River Wave Divider present
+  assert.ok(!html.includes('id="fish-canvas"'), 'index.html must not contain #fish-canvas');
+  assert.ok(!html.includes('class="fish-pond-section"'), 'index.html must not contain .fish-pond-section');
+  assert.ok(/class="river-divider"[^>]*aria-hidden="true"/.test(html) || /aria-hidden="true"[^>]*class="river-divider"/.test(html),
+    'index.html must contain .river-divider with aria-hidden="true"');
+  assert.ok(html.includes('<svg viewBox="0 0 1200 60"') && html.includes('preserveAspectRatio="none"'),
+    'index.html must contain river wave SVG with viewBox="0 0 1200 60" and preserveAspectRatio="none"');
+  assert.ok(html.includes('fill="currentColor"'), 'river wave SVG path must use fill="currentColor"');
+
+  const appCode = source('app.js');
+  assert.ok(!appCode.includes('fish-canvas'), 'app.js must not reference fish-canvas');
+  assert.ok(!appCode.includes('FishPond'), 'app.js must not reference FishPond');
+  assert.ok(!appCode.includes('initFishPond'), 'app.js must not contain initFishPond');
+
+  assert.ok(!css.includes('#fish-canvas'), 'styles.css must not contain #fish-canvas');
+  assert.ok(!css.includes('.fish-pond'), 'styles.css must not contain .fish-pond');
+  assert.ok(!css.includes('.canvas-wrapper'), 'styles.css must not contain .canvas-wrapper');
+  assert.ok(css.includes('.river-divider'), 'styles.css must define styles for .river-divider');
 }
 
 function checkCloudflareConfigs() {
