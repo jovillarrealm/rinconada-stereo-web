@@ -9,9 +9,17 @@
  * @typedef {'light' | 'dark'} ThemeName
  *
  * @typedef {Object} StorageGateway
- * @property {function(string, (string|null)=): (string|null)} get - Obtiene un valor de forma segura
- * @property {function(string, (string|number|boolean)): boolean} set - Almacena un valor serializado
+ * @property {function(string, (string|null)=, function(string): boolean=): (string|null)} get - Obtiene un valor de forma segura
+ * @property {function(string, any): boolean} set - Almacena un valor serializado
  * @property {function(string): boolean} remove - Elimina una clave de forma segura
+ * @property {function(string, any=, function(any): boolean=): any} getJson - Obtiene y deserializa JSON con validación de predicado opcional
+ * @property {function(string, any): boolean} setJson - Serializa a JSON y almacena de forma segura
+ * @property {function(string, (number|null)=, function(number): boolean=): (number|null)} getNumber - Obtiene un número tipado y validado
+ * @property {function(string, number): boolean} setNumber - Almacena un número de forma segura
+ * @property {function(string, boolean=): boolean} getBoolean - Obtiene un valor booleano tipado
+ * @property {function(string, boolean): boolean} setBoolean - Almacena un booleano de forma segura
+ * @property {function(string): boolean} has - Comprueba si una clave existe
+ * @property {function(): boolean} clear - Limpia el almacén de forma segura
  *
  * @typedef {Object} StorageAdapterType
  * @property {StorageGateway} local
@@ -37,95 +45,266 @@
  * @property {string} [songtitle] - Título emitido por el encoder Shoutcast
  */
 
-// --- 1. MÓDULO DE ALMACENAMIENTO SEGURO (StorageAdapter) ---
+// --- 1. MÓDULO DE ALMACENAMIENTO SEGURO Y PROFUNDO (StorageAdapter) ---
+/**
+ * Fábrica de pasarelas de almacenamiento con absorción de serialización JSON,
+ * validación mediante predicados, soporte de primitivos tipados y almacén
+ * en memoria resiliente frente a restricciones de cuota o seguridad (SecurityError).
+ *
+ * @param {'localStorage' | 'sessionStorage'} storageType
+ * @returns {StorageGateway}
+ */
+function createStorageGateway(storageType) {
+  /** @type {Map<string, string>} */
+  const memoryStore = new Map();
+
+  function getRawStorage() {
+    try {
+      if (typeof window !== 'undefined' && window && window[storageType]) {
+        return window[storageType];
+      }
+    } catch (e) {}
+    try {
+      if (typeof globalThis !== 'undefined' && globalThis && globalThis[storageType]) {
+        return globalThis[storageType];
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  const gateway = {
+    /**
+     * Obtiene una cadena de texto almacenada con valor de respaldo y validación opcional.
+     * @param {string} key
+     * @param {string|null} [fallback=null]
+     * @param {function(string): boolean} [validator=null]
+     * @returns {string|null}
+     */
+    get(key, fallback = null, validator = null) {
+      if (typeof key !== 'string' || !key) return fallback;
+      let val = null;
+      let found = false;
+
+      try {
+        const storage = getRawStorage();
+        if (storage) {
+          val = storage.getItem(key);
+          if (val !== null && val !== undefined) {
+            found = true;
+          }
+        }
+      } catch (e) {
+        // Excepción de acceso WebStorage (SecurityError, cookies bloqueadas)
+      }
+
+      if (!found && memoryStore.has(key)) {
+        val = memoryStore.get(key);
+        found = true;
+      }
+
+      if (!found || val === null || val === undefined) return fallback;
+
+      if (typeof validator === 'function') {
+        try {
+          if (!validator(val)) return fallback;
+        } catch (e) {
+          return fallback;
+        }
+      }
+
+      return val;
+    },
+
+    /**
+     * Almacena un valor serializado. Ante QuotaExceededError o SecurityError,
+     * almacena en memoria para asegurar la continuidad de la sesión.
+     * @param {string} key
+     * @param {any} val
+     * @returns {boolean}
+     */
+    set(key, val) {
+      if (typeof key !== 'string' || !key || val === undefined) return false;
+      let strVal;
+      if (typeof val === 'object' && val !== null) {
+        try {
+          strVal = JSON.stringify(val);
+        } catch (e) {
+          return false;
+        }
+      } else {
+        strVal = String(val);
+      }
+
+      try {
+        const storage = getRawStorage();
+        if (storage) {
+          storage.setItem(key, strVal);
+        }
+      } catch (e) {
+        // WebStorage lanzó QuotaExceededError o SecurityError
+      }
+
+      memoryStore.set(key, strVal);
+      return true;
+    },
+
+    /**
+     * Elimina una clave de WebStorage y del almacén en memoria.
+     * @param {string} key
+     * @returns {boolean}
+     */
+    remove(key) {
+      if (typeof key !== 'string' || !key) return false;
+      memoryStore.delete(key);
+      try {
+        const storage = getRawStorage();
+        if (storage) {
+          storage.removeItem(key);
+        }
+      } catch (e) {}
+      return true;
+    },
+
+    /**
+     * Obtiene y parsea un valor JSON con validación de predicado opcional.
+     * Si el JSON es inválido o no supera el validador, devuelve el fallback sin lanzar error.
+     * @template T
+     * @param {string} key
+     * @param {T} [fallback=null]
+     * @param {function(any): boolean} [validator=null]
+     * @returns {T|any}
+     */
+    getJson(key, fallback = null, validator = null) {
+      if (typeof key !== 'string' || !key) return fallback;
+      const raw = gateway.get(key);
+      if (raw === null || raw === undefined || raw === '') return fallback;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed === null || parsed === undefined) return fallback;
+        if (typeof validator === 'function') {
+          try {
+            if (!validator(parsed)) return fallback;
+          } catch (err) {
+            return fallback;
+          }
+        }
+        return parsed;
+      } catch (e) {
+        return fallback;
+      }
+    },
+
+    /**
+     * Serializa un objeto o valor a JSON y lo persiste de forma segura.
+     * @param {string} key
+     * @param {any} val
+     * @returns {boolean}
+     */
+    setJson(key, val) {
+      if (typeof key !== 'string' || !key || val === undefined) return false;
+      try {
+        const serialized = JSON.stringify(val);
+        return gateway.set(key, serialized);
+      } catch (e) {
+        return false;
+      }
+    },
+
+    /**
+     * Obtiene un valor numérico seguro y finito con validación opcional.
+     * @param {string} key
+     * @param {number|null} [fallback=null]
+     * @param {function(number): boolean} [validator=null]
+     * @returns {number|null}
+     */
+    getNumber(key, fallback = null, validator = null) {
+      if (typeof key !== 'string' || !key) return fallback;
+      const raw = gateway.get(key);
+      if (raw === null || raw === undefined || raw === '') return fallback;
+      const num = Number(raw);
+      if (!Number.isFinite(num)) return fallback;
+      if (typeof validator === 'function') {
+        try {
+          if (!validator(num)) return fallback;
+        } catch (e) {
+          return fallback;
+        }
+      }
+      return num;
+    },
+
+    /**
+     * Almacena un número finito en el almacén.
+     * @param {string} key
+     * @param {number} val
+     * @returns {boolean}
+     */
+    setNumber(key, val) {
+      if (typeof key !== 'string' || !key || typeof val !== 'number' || !Number.isFinite(val)) return false;
+      return gateway.set(key, String(val));
+    },
+
+    /**
+     * Obtiene un valor booleano tipado.
+     * @param {string} key
+     * @param {boolean} [fallback=false]
+     * @returns {boolean}
+     */
+    getBoolean(key, fallback = false) {
+      if (typeof key !== 'string' || !key) return fallback;
+      const raw = gateway.get(key);
+      if (raw === null || raw === undefined) return fallback;
+      if (raw === 'true' || raw === true || raw === '1' || raw === 1) return true;
+      if (raw === 'false' || raw === false || raw === '0' || raw === 0) return false;
+      return fallback;
+    },
+
+    /**
+     * Almacena un valor booleano tipado.
+     * @param {string} key
+     * @param {boolean} val
+     * @returns {boolean}
+     */
+    setBoolean(key, val) {
+      if (typeof key !== 'string' || !key) return false;
+      return gateway.set(key, val ? 'true' : 'false');
+    },
+
+    /**
+     * Comprueba si una clave existe en el almacén o memoria de respaldo.
+     * @param {string} key
+     * @returns {boolean}
+     */
+    has(key) {
+      if (typeof key !== 'string' || !key) return false;
+      try {
+        const storage = getRawStorage();
+        if (storage && storage.getItem(key) !== null) return true;
+      } catch (e) {}
+      return memoryStore.has(key);
+    },
+
+    /**
+     * Limpia el almacén WebStorage y la memoria de respaldo.
+     * @returns {boolean}
+     */
+    clear() {
+      memoryStore.clear();
+      try {
+        const storage = getRawStorage();
+        if (storage) storage.clear();
+      } catch (e) {}
+      return true;
+    }
+  };
+
+  return gateway;
+}
+
 /** @type {StorageAdapterType} */
 const StorageAdapter = {
-  local: {
-    /**
-     * @param {string} key
-     * @param {string|null} [fallback=null]
-     * @returns {string|null}
-     */
-    get(key, fallback = null) {
-      if (typeof key !== 'string' || !key) return fallback;
-      try {
-        const val = localStorage.getItem(key);
-        return val !== null ? val : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    /**
-     * @param {string} key
-     * @param {string|number|boolean} val
-     * @returns {boolean}
-     */
-    set(key, val) {
-      if (typeof key !== 'string' || !key || val === undefined) return false;
-      try {
-        localStorage.setItem(key, String(val));
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-    /**
-     * @param {string} key
-     * @returns {boolean}
-     */
-    remove(key) {
-      if (typeof key !== 'string' || !key) return false;
-      try {
-        localStorage.removeItem(key);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-  },
-  session: {
-    /**
-     * @param {string} key
-     * @param {string|null} [fallback=null]
-     * @returns {string|null}
-     */
-    get(key, fallback = null) {
-      if (typeof key !== 'string' || !key) return fallback;
-      try {
-        const val = sessionStorage.getItem(key);
-        return val !== null ? val : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    /**
-     * @param {string} key
-     * @param {string|number|boolean} val
-     * @returns {boolean}
-     */
-    set(key, val) {
-      if (typeof key !== 'string' || !key || val === undefined) return false;
-      try {
-        sessionStorage.setItem(key, String(val));
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-    /**
-     * @param {string} key
-     * @returns {boolean}
-     */
-    remove(key) {
-      if (typeof key !== 'string' || !key) return false;
-      try {
-        sessionStorage.removeItem(key);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-  }
+  local: createStorageGateway('localStorage'),
+  session: createStorageGateway('sessionStorage')
 };
 
 // --- 2. MÓDULO DE CONECTIVIDAD Y MODO AHORRO (NetworkMonitor) ---
@@ -148,14 +327,22 @@ const ThemeManager = (function() {
   const subscribers = [];
   let currentTheme = 'light';
 
+  function isValidTheme(theme) {
+    return theme === 'light' || theme === 'dark';
+  }
+
   function getSystemTheme() {
     return mediaQuery && mediaQuery.matches ? 'dark' : 'light';
   }
 
   function detectInitialTheme() {
-    return document.documentElement.getAttribute('data-theme') ||
-      StorageAdapter.local.get(STORAGE_KEY) ||
-      getSystemTheme();
+    const domTheme = document.documentElement.getAttribute('data-theme');
+    if (isValidTheme(domTheme)) return domTheme;
+
+    const savedTheme = StorageAdapter.local.get(STORAGE_KEY, null, isValidTheme);
+    if (savedTheme) return savedTheme;
+
+    return getSystemTheme();
   }
 
   function apply(theme, isUserAction = false) {
@@ -201,7 +388,7 @@ const ThemeManager = (function() {
 
     if (mediaQuery) {
       const onSystemChange = (e) => {
-        if (!StorageAdapter.local.get(STORAGE_KEY)) {
+        if (!StorageAdapter.local.get(STORAGE_KEY, null, isValidTheme)) {
           apply(e.matches ? 'dark' : 'light', false);
         }
       };
@@ -444,20 +631,13 @@ const AudioController = (function() {
 
   function initVolume() {
     if (!audio || !volumeSlider) return;
-    const savedVol = StorageAdapter.local.get(VOL_STORAGE_KEY);
-    const savedMute = StorageAdapter.local.get(MUTE_STORAGE_KEY);
-    if (savedVol !== null) {
-      const parsed = parseFloat(savedVol);
-      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
-        audio.volume = parsed;
-        volumeSlider.value = parsed;
-      } else {
-        audio.volume = parseFloat(volumeSlider.value);
-      }
-    } else {
-      audio.volume = parseFloat(volumeSlider.value);
-    }
-    if (savedMute === 'true') {
+    const defaultVol = parseFloat(volumeSlider.value);
+    const validDefault = (!isNaN(defaultVol) && defaultVol >= 0 && defaultVol <= 1) ? defaultVol : 1;
+    const savedVol = StorageAdapter.local.getNumber(VOL_STORAGE_KEY, validDefault, (v) => v >= 0 && v <= 1);
+    audio.volume = savedVol;
+    volumeSlider.value = savedVol;
+
+    if (StorageAdapter.local.getBoolean(MUTE_STORAGE_KEY, false)) {
       audio.muted = true;
     }
     updateMuteIcons();
@@ -514,8 +694,8 @@ const AudioController = (function() {
         }
         audio.volume = Number(slider.value);
         audio.muted = (audio.volume === 0);
-        StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
-        StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
+        StorageAdapter.local.setNumber(VOL_STORAGE_KEY, audio.volume);
+        StorageAdapter.local.setBoolean(MUTE_STORAGE_KEY, audio.muted);
         updateMuteIcons();
       });
     }
@@ -532,8 +712,8 @@ const AudioController = (function() {
           if (volumeSlider) volumeSlider.value = 0.5;
           if (stickyVolumeSlider) stickyVolumeSlider.value = 0.5;
         }
-        StorageAdapter.local.set(MUTE_STORAGE_KEY, audio.muted ? 'true' : 'false');
-        StorageAdapter.local.set(VOL_STORAGE_KEY, audio.volume);
+        StorageAdapter.local.setBoolean(MUTE_STORAGE_KEY, audio.muted);
+        StorageAdapter.local.setNumber(VOL_STORAGE_KEY, audio.volume);
         updateMuteIcons();
       });
     }
@@ -1043,16 +1223,9 @@ const recentTracksPanel = document.querySelector('#recent-tracks-panel');
 const recentTracksList = document.querySelector('#recent-tracks-list');
 const recentBadge = document.querySelector('#recent-badge');
 
-let recentTracks = [];
-try {
-  const stored = StorageAdapter.session.get('rinconada_recent_tracks');
-  if (stored) {
-    const parsed = JSON.parse(stored);
-    if (Array.isArray(parsed)) {
-      recentTracks = parsed.filter(item => item && typeof item.title === 'string' && typeof item.time === 'string').slice(0, 5);
-    }
-  }
-} catch (e) {}
+let recentTracks = StorageAdapter.session.getJson('rinconada_recent_tracks', [], Array.isArray)
+  .filter(item => item && typeof item.title === 'string' && typeof item.time === 'string')
+  .slice(0, 5);
 
 /**
  * Renderiza la lista visual de pistas reproducidas recientemente.
@@ -1097,7 +1270,7 @@ function addRecentTrack(title) {
   recentTracks.unshift({ title, time: timeFormatted });
   if (recentTracks.length > 5) recentTracks.pop();
 
-  StorageAdapter.session.set('rinconada_recent_tracks', JSON.stringify(recentTracks));
+  StorageAdapter.session.setJson('rinconada_recent_tracks', recentTracks);
   renderRecentTracks();
 }
 
@@ -1380,20 +1553,34 @@ function renderWeatherHTML(temp, desc, icon, humidity, wind) {
   `;
 }
 
+function isWeatherPayloadValid(data) {
+  return !!(
+    data &&
+    typeof data === 'object' &&
+    typeof data.temp === 'number' &&
+    Number.isFinite(data.temp) &&
+    typeof data.desc === 'string' &&
+    typeof data.icon === 'string' &&
+    typeof data.humidity === 'number' &&
+    Number.isFinite(data.humidity) &&
+    typeof data.wind === 'number' &&
+    Number.isFinite(data.wind)
+  );
+}
+
 async function loadOpenMeteoWeather() {
   if (!weatherCard) return;
 
   // 1. Verificación previa en caché de sesión (0 ms de espera y 0 datos transferidos)
-  try {
-    const cachedRaw = StorageAdapter.session.get(WEATHER_CACHE_KEY);
-    if (cachedRaw) {
-      const cached = JSON.parse(cachedRaw);
-      if (cached && typeof cached.timestamp === 'number' && Date.now() - cached.timestamp < WEATHER_CACHE_TTL) {
-        renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
-        return;
-      }
-    }
-  } catch (e) {}
+  const cached = StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, (data) =>
+    isWeatherPayloadValid(data) &&
+    typeof data.timestamp === 'number' &&
+    Date.now() - data.timestamp < WEATHER_CACHE_TTL
+  );
+  if (cached) {
+    renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
+    return;
+  }
 
   const lat = 9.2579;
   const lon = -74.2599;
@@ -1422,30 +1609,23 @@ async function loadOpenMeteoWeather() {
     const wind = Math.round(current.wind_speed_10m);
 
     // Guardar en caché para visitas posteriores
-    try {
-      StorageAdapter.session.set(WEATHER_CACHE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-        temp,
-        humidity,
-        wind,
-        desc: info.desc,
-        icon: info.icon
-      }));
-    } catch (e) {}
+    StorageAdapter.session.setJson(WEATHER_CACHE_KEY, {
+      timestamp: Date.now(),
+      temp,
+      humidity,
+      wind,
+      desc: info.desc,
+      icon: info.icon
+    });
 
     renderWeatherHTML(temp, info.desc, info.icon, humidity, wind);
   } catch (err) {
     // Si la red falla pero hay un pronóstico previo en caché, preservarlo
-    try {
-      const cachedRaw = StorageAdapter.session.get(WEATHER_CACHE_KEY);
-      if (cachedRaw) {
-        const cached = JSON.parse(cachedRaw);
-        if (cached && typeof cached.temp === 'number') {
-          renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
-          return;
-        }
-      }
-    } catch (e) {}
+    const cachedStale = StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, isWeatherPayloadValid);
+    if (cachedStale) {
+      renderWeatherHTML(cachedStale.temp, cachedStale.desc, cachedStale.icon, cachedStale.humidity, cachedStale.wind);
+      return;
+    }
 
     weatherCard.innerHTML = `
       <div class="weather-error">
