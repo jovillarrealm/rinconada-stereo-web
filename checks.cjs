@@ -303,6 +303,45 @@ function checkAssetsAndStyles() {
   assert.ok(css.includes('.river-divider'), 'styles.css must define styles for .river-divider');
 }
 
+function checkBlogsSection() {
+  const html = source('index.html');
+  const css = source('styles.css');
+
+  assert.ok(html.includes('class="blogs-section"'), 'index.html must have blogs-section class');
+  assert.ok(html.includes('class="blogs-layout"'), 'index.html must have blogs-layout class');
+  assert.ok(!/schedule-[a-z0-9_-]+/i.test(html), 'index.html must not contain obsolete schedule-* classes');
+
+  assert.ok(css.includes('.blogs-section'), 'styles.css must style .blogs-section');
+  assert.ok(css.includes('.blogs-layout'), 'styles.css must style .blogs-layout');
+  assert.ok(!/\.schedule-[a-z0-9_-]+/i.test(css), 'styles.css must not contain obsolete .schedule-* selectors');
+
+  const expectedBlogs = [
+    { title: 'Pacheros de pura cepa', url: 'https://pacherosdepuracepa.wordpress.com/' },
+    { title: 'Mi pueblo olvidado', url: 'https://mipuebloolvidado.wordpress.com/' },
+    { title: 'Música de acordeón del Caribe', url: 'http://acordeonenelcaribe.blogspot.com/' },
+    { title: 'Festival Indepa', url: 'https://festivalindepa.wordpress.com/' },
+    { title: 'Wilfredo Rosales — Efemérides Vallenatas', url: 'https://www.youtube.com/channel/UCQrx_tAgzBYk5x0-E7tgghg' }
+  ];
+
+  for (const blog of expectedBlogs) {
+    assert.ok(html.includes(blog.title), `index.html must include blog '${blog.title}'`);
+    assert.ok(html.includes(`href="${blog.url}"`), `index.html must link to '${blog.url}'`);
+  }
+
+  // Accessibility & security checks on external cultural blog links
+  const blogLinkRegex = /<a\s+class="blog-link-row"\s+href="([^"]+)"\s+target="_blank"\s+rel="noopener noreferrer">([\s\S]*?)<\/a>/g;
+  const matches = [...html.matchAll(blogLinkRegex)];
+  assert.equal(matches.length, 5, 'Must find 5 blog links with target="_blank" and rel="noopener noreferrer"');
+  for (const match of matches) {
+    assert.ok(match[2].includes('class="sr-only"'), 'Each blog link must include accessible sr-only text');
+    assert.ok(match[2].includes('(se abre en una pestaña nueva)'), 'sr-only text must announce opening in new tab');
+  }
+
+  // Verify Open-Meteo weather aside remains intact
+  assert.ok(html.includes('id="clima-regional"'), 'index.html must preserve #clima-regional weather aside');
+  assert.ok(html.includes('id="weather-card"'), 'index.html must preserve #weather-card');
+}
+
 function checkCloudflareConfigs() {
   const headers = source('_headers');
   assert.ok(headers.includes('/assets/*'), '_headers must define cache policy for /assets/*');
@@ -368,11 +407,12 @@ function checkInstitutionalIdentity() {
   checkCloudflareConfigs();
   checkInstitutionalIdentity();
   checkAssetsAndStyles();
+  checkBlogsSection();
   for (const stored of [null, '{bad json', 'null', '{}', '[null,{"title":42}]',
     JSON.stringify(Array.from({ length: 8 }, (_, i) => ({ title: `Track ${i}`, time: '12:00' })))]) {
     await checkApp(stored);
   }
   await checkWorker();
-  console.log('PASS: Cloudflare headers & redirects, institutional identity compliance, safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, and low-bandwidth icon hygiene.');
+  console.log('PASS: Cloudflare headers & redirects, institutional identity compliance, blogs semantic refactor, safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, and low-bandwidth icon hygiene.');
 })().catch(err => { console.error(err); process.exitCode = 1; });
 
