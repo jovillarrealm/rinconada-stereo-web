@@ -1222,228 +1222,394 @@ function startSleepTimer(minutes) {
   return SleepTimer.start(minutes);
 }
 
-// --- 6. MÓDULO HISTORIAL DE TEMAS RECIENTES (TrackHistory) ---
-const trackShareWa = document.querySelector('#track-share-wa');
-const recentTracksToggle = document.querySelector('#recent-tracks-toggle');
-const recentTracksPanel = document.querySelector('#recent-tracks-panel');
-const recentTracksList = document.querySelector('#recent-tracks-list');
-const recentBadge = document.querySelector('#recent-badge');
-
-let recentTracks = StorageAdapter.session.getJson('rinconada_recent_tracks', [], Array.isArray)
-  .filter(item => item && typeof item.title === 'string' && typeof item.time === 'string')
-  .slice(0, 5);
-
+// --- 6. MÓDULO INTEGRAL DE PISTA EN VIVO E HISTORIAL (LiveTrackModule) ---
 /**
- * Renderiza la lista visual de pistas reproducidas recientemente.
- * @returns {void}
+ * Módulo unificado y profundo para la gestión integral de metadatos en vivo:
+ * - Sondeo adaptativo Shoutcast JSONP con resiliencia de red y modo ahorro de datos.
+ * - Saneamiento y validación estricta de títulos de temas musicales.
+ * - Formateo y enlace dinámico de mensajes de dedicatoria por WhatsApp (#track-share-wa y #sticky-wa-btn).
+ * - Historial seguro de canciones en sessionStorage (máximo 5) inmune a inyecciones XSS.
+ * - Sincronización con MediaSession API nativa del navegador y sistema operativo.
+ * - Presentación de UI con transiciones fluidas de opacidad y estado en vivo.
  */
-function renderRecentTracks() {
-  if (!recentTracksList) return;
-  if (!recentTracks || recentTracks.length === 0) {
-    recentTracksList.innerHTML = '<li class="recent-track-empty">Aún no hay canciones anteriores registradas.</li>';
-    if (recentBadge) recentBadge.textContent = '0';
-    return;
+const LiveTrackModule = (function() {
+  const STORAGE_KEY = 'rinconada_recent_tracks';
+  const MAX_HISTORY_ITEMS = 5;
+  const SCRIPT_TIMEOUT_MS = 6000;
+  const WA_BASE_URL = 'https://wa.me/573052430933';
+
+  // Referencias cacheadas a elementos del DOM
+  let trackTitleEl = null;
+  let trackBoxEl = null;
+  let stickyTrackTitleEl = null;
+  let trackShareWaEl = null;
+  let stickyWaBtnEl = null;
+  let recentTracksToggleEl = null;
+  let recentTracksPanelEl = null;
+  let recentTracksListEl = null;
+  let recentBadgeEl = null;
+
+  // Estado interno del módulo
+  let currentTrackTitle = '';
+  let metaPollInterval = null;
+  let pendingMetaScript = null;
+  let metaTimeoutId = null;
+
+  // Carga inicial y saneamiento estricto del historial de temas desde almacenamiento seguro de sesión
+  const recentTracks = (function loadInitialHistory() {
+    const raw = StorageAdapter.session.getJson(STORAGE_KEY, [], Array.isArray);
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(item => item && typeof item.title === 'string' && typeof item.time === 'string')
+      .slice(0, MAX_HISTORY_ITEMS);
+  })();
+
+  function resolveElements() {
+    trackTitleEl = document.querySelector('#track-title');
+    trackBoxEl = document.querySelector('#now-playing-box');
+    stickyTrackTitleEl = (typeof stickyTrackTitle !== 'undefined' && stickyTrackTitle) || document.querySelector('#sticky-track-title');
+    trackShareWaEl = document.querySelector('#track-share-wa');
+    stickyWaBtnEl = (typeof stickyWaBtn !== 'undefined' && stickyWaBtn) || document.querySelector('#sticky-wa-btn');
+    recentTracksToggleEl = document.querySelector('#recent-tracks-toggle');
+    recentTracksPanelEl = document.querySelector('#recent-tracks-panel');
+    recentTracksListEl = document.querySelector('#recent-tracks-list');
+    recentBadgeEl = document.querySelector('#recent-badge');
   }
-  if (recentBadge) recentBadge.textContent = recentTracks.length;
-  recentTracksList.replaceChildren(...recentTracks.map(item => {
-    const row = document.createElement('li');
-    row.className = 'recent-track-item';
-    const name = document.createElement('span');
-    name.className = 'recent-track-name';
-    name.title = item.title;
-    name.textContent = item.title;
-    const time = document.createElement('span');
-    time.className = 'recent-track-time';
-    time.textContent = item.time;
-    row.append(name, time);
-    return row;
-  }));
-}
 
-/**
- * Agrega una pista al historial de sesión (máximo 5 registros).
- * @param {string} title - Título de la pista recibida
- * @returns {void}
- */
-function addRecentTrack(title) {
-  if (!title || typeof title !== 'string') return;
-  const lower = title.toLowerCase();
-  if (lower.includes('sintonizando') || lower.includes('rinconada stereo') || lower.includes('transmisión')) return;
-  if (recentTracks.length > 0 && recentTracks[0].title.toLowerCase() === lower) return;
+  /**
+   * Construye el enlace de dedicatoria de WhatsApp preformateado para el tema en reproducción.
+   * @param {string} trackName
+   * @returns {string} URL de WhatsApp con mensaje codificado
+   */
+  function buildWhatsAppDedicationUrl(trackName) {
+    if (!trackName || typeof trackName !== 'string') return WA_BASE_URL;
+    const trimmed = trackName.trim();
+    if (!trimmed) return WA_BASE_URL;
+    const msg = `¡Hola Rinconada Stereo! Estoy escuchando "${trimmed}" desde la web y quiero pedir una dedicatoria / saludo en cabina 📻🎶`;
+    return `${WA_BASE_URL}?text=${encodeURIComponent(msg)}`;
+  }
 
-  const now = new Date();
-  const timeFormatted = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-  recentTracks.unshift({ title, time: timeFormatted });
-  if (recentTracks.length > 5) recentTracks.pop();
+  /**
+   * Actualiza los enlaces de dedicatoria en el reproductor principal y sticky player.
+   * @param {string} trackName
+   */
+  function updateDedicationLinks(trackName) {
+    const url = buildWhatsAppDedicationUrl(trackName);
+    if (trackShareWaEl) trackShareWaEl.href = url;
+    if (stickyWaBtnEl) stickyWaBtnEl.href = url;
+  }
 
-  StorageAdapter.session.setJson('rinconada_recent_tracks', recentTracks);
-  renderRecentTracks();
-}
-
-if (recentTracksToggle && recentTracksPanel) {
-  recentTracksToggle.addEventListener('click', () => {
-    const isHidden = recentTracksPanel.hasAttribute('hidden');
-    if (isHidden) {
-      recentTracksPanel.removeAttribute('hidden');
-      recentTracksToggle.setAttribute('aria-expanded', 'true');
-    } else {
-      recentTracksPanel.setAttribute('hidden', '');
-      recentTracksToggle.setAttribute('aria-expanded', 'false');
-    }
-  });
-}
-renderRecentTracks();
-
-// --- 7. MÓDULO DE METADATOS EN VIVO (MetadataService) ---
-const trackTitleEl = document.querySelector('#track-title');
-const trackBoxEl = document.querySelector('#now-playing-box');
-let currentTrackTitle = '';
-let metaPollInterval = null;
-let pendingMetaScript = null;
-let metaTimeoutId = null;
-
-/**
- * Actualiza el título y metadatos en vivo en UI, MediaSession y enlaces de dedicatoria.
- * @param {string} rawTitle - Título crudo emitido por el streaming
- * @returns {void}
- */
-function updateNowPlaying(rawTitle) {
-  if (typeof rawTitle !== 'string') return;
-  const cleaned = rawTitle.trim();
-  if (!cleaned) return;
-
-  if (cleaned !== currentTrackTitle) {
-    currentTrackTitle = cleaned;
-    if (trackTitleEl) {
-      trackTitleEl.style.opacity = '0';
-      setTimeout(() => {
-        trackTitleEl.textContent = cleaned;
-        trackTitleEl.setAttribute('title', cleaned);
-        trackTitleEl.style.opacity = '1';
-      }, 150);
-    }
-    if (stickyTrackTitle) {
-      stickyTrackTitle.textContent = cleaned;
-      stickyTrackTitle.setAttribute('title', cleaned);
-    }
-    if (trackBoxEl) {
-      trackBoxEl.classList.add('is-live');
-    }
-
-    const waDedicationMsg = encodeURIComponent(`¡Hola Rinconada Stereo! Estoy escuchando "${cleaned}" desde la web y quiero pedir una dedicatoria / saludo en cabina 📻🎶`);
-    const waUrl = `https://wa.me/573052430933?text=${waDedicationMsg}`;
-    if (trackShareWa) trackShareWa.href = waUrl;
-    if (stickyWaBtn) stickyWaBtn.href = waUrl;
-
-    addRecentTrack(cleaned);
-
-    if ('mediaSession' in navigator) {
-      try {
-        const logoUrl = new URL('assets/logo-rinconada.png', window.location.href).href;
-        const validScheme = /^(https?:|blob:|data:)/i.test(logoUrl);
+  /**
+   * Actualiza los metadatos de MediaSession nativos del sistema operativo.
+   * @param {string} trackName
+   */
+  function updateMediaSession(trackName) {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    try {
+      let logoUrl = 'assets/logo-rinconada.png';
+      if (typeof window !== 'undefined' && window.location && window.location.href) {
+        logoUrl = new URL('assets/logo-rinconada.png', window.location.href).href;
+      }
+      const validScheme = /^(https?:|blob:|data:)/i.test(logoUrl);
+      if (typeof MediaMetadata === 'function') {
         navigator.mediaSession.metadata = new MediaMetadata({
-          title: cleaned,
+          title: trackName,
           artist: 'Rinconada Stereo',
           album: 'Señal en directo · La Pacha',
           artwork: validScheme ? [{ src: logoUrl, sizes: '512x512', type: 'image/png' }] : []
         });
-      } catch (e) {}
+      }
+    } catch (e) {
+      // Ignora errores si la API MediaSession no está completamente implementada en el entorno
     }
   }
-}
 
-// Handler estático para JSONP sin polución global ni desoptimizaciones V8
-window.__rsMetadataHandler = function(data) {
-  if (metaTimeoutId) {
-    clearTimeout(metaTimeoutId);
-    metaTimeoutId = null;
-  }
-  if (pendingMetaScript && pendingMetaScript.parentNode) {
-    pendingMetaScript.parentNode.removeChild(pendingMetaScript);
-    pendingMetaScript = null;
-  }
-  if (data && data.songtitle) {
-    updateNowPlaying(data.songtitle);
-  }
-};
-
-function fetchLiveTrack() {
-  if (!NetworkMonitor.isOnline()) return;
-
-  if (pendingMetaScript && pendingMetaScript.parentNode) {
-    pendingMetaScript.parentNode.removeChild(pendingMetaScript);
-    pendingMetaScript = null;
-  }
-  if (metaTimeoutId) {
-    clearTimeout(metaTimeoutId);
-    metaTimeoutId = null;
-  }
-
-  const script = document.createElement('script');
-  pendingMetaScript = script;
-
-  metaTimeoutId = setTimeout(() => {
-    if (pendingMetaScript && pendingMetaScript.parentNode) {
-      pendingMetaScript.parentNode.removeChild(pendingMetaScript);
-      pendingMetaScript = null;
+  /**
+   * Renderiza la lista visual de pistas reproducidas recientemente de forma segura (sin riesgo XSS).
+   * @returns {void}
+   */
+  function renderRecentTracks() {
+    if (!recentTracksListEl) return;
+    if (!recentTracks || recentTracks.length === 0) {
+      recentTracksListEl.innerHTML = '<li class="recent-track-empty">Aún no hay canciones anteriores registradas.</li>';
+      if (recentBadgeEl) recentBadgeEl.textContent = '0';
+      return;
     }
-    metaTimeoutId = null;
-  }, 6000);
+    if (recentBadgeEl) recentBadgeEl.textContent = String(recentTracks.length);
+    recentTracksListEl.replaceChildren(...recentTracks.map(item => {
+      const row = document.createElement('li');
+      row.className = 'recent-track-item';
+      const name = document.createElement('span');
+      name.className = 'recent-track-name';
+      name.title = item.title;
+      name.textContent = item.title;
+      const time = document.createElement('span');
+      time.className = 'recent-track-time';
+      time.textContent = item.time;
+      row.append(name, time);
+      return row;
+    }));
+  }
 
-  script.onerror = function() {
+  /**
+   * Agrega una pista al historial de sesión (máximo 5 registros) previniendo duplicados y promocionales.
+   * @param {string} title - Título de la pista recibida
+   * @returns {void}
+   */
+  function addRecentTrack(title) {
+    if (!title || typeof title !== 'string') return;
+    const lower = title.toLowerCase();
+    if (lower.includes('sintonizando') || lower.includes('rinconada stereo') || lower.includes('transmisión')) return;
+    if (recentTracks.length > 0 && recentTracks[0].title.toLowerCase() === lower) return;
+
+    const now = new Date();
+    const timeFormatted = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    recentTracks.unshift({ title, time: timeFormatted });
+    if (recentTracks.length > MAX_HISTORY_ITEMS) recentTracks.pop();
+
+    StorageAdapter.session.setJson(STORAGE_KEY, recentTracks);
+    renderRecentTracks();
+  }
+
+  /**
+   * Actualiza el tema en reproducción, dedicatoria de WhatsApp, MediaSession,
+   * historial de canciones y presentación en la interfaz.
+   * Acepta un título en cadena de texto o un objeto de carga útil Shoutcast ({ songtitle: ... }).
+   * @param {string|{ songtitle?: any }} payloadOrTitle
+   * @returns {string|null} Título normalizado aplicado o null si no hubo cambio/inválido
+   */
+  function updateNowPlaying(payloadOrTitle) {
+    let rawTitle = '';
+    if (typeof payloadOrTitle === 'string') {
+      rawTitle = payloadOrTitle;
+    } else if (payloadOrTitle && typeof payloadOrTitle === 'object' && typeof payloadOrTitle.songtitle === 'string') {
+      rawTitle = payloadOrTitle.songtitle;
+    } else {
+      return null;
+    }
+
+    const cleaned = rawTitle.trim();
+    if (!cleaned) return null;
+
+    if (cleaned !== currentTrackTitle) {
+      currentTrackTitle = cleaned;
+
+      if (trackTitleEl) {
+        trackTitleEl.style.opacity = '0';
+        setTimeout(() => {
+          if (trackTitleEl) {
+            trackTitleEl.textContent = cleaned;
+            trackTitleEl.setAttribute('title', cleaned);
+            trackTitleEl.style.opacity = '1';
+          }
+        }, 150);
+      }
+      if (stickyTrackTitleEl) {
+        stickyTrackTitleEl.textContent = cleaned;
+        stickyTrackTitleEl.setAttribute('title', cleaned);
+      }
+      if (trackBoxEl) {
+        trackBoxEl.classList.add('is-live');
+      }
+
+      updateDedicationLinks(cleaned);
+      addRecentTrack(cleaned);
+      updateMediaSession(cleaned);
+    }
+    return cleaned;
+  }
+
+  /**
+   * Manejador de la respuesta JSONP del encoder Shoutcast.
+   * @param {Object} data
+   */
+  function handleMetadataResponse(data) {
     if (metaTimeoutId) {
       clearTimeout(metaTimeoutId);
       metaTimeoutId = null;
     }
-    if (script.parentNode) {
-      script.parentNode.removeChild(script);
+    if (pendingMetaScript && pendingMetaScript.parentNode) {
+      pendingMetaScript.parentNode.removeChild(pendingMetaScript);
+      pendingMetaScript = null;
     }
-    pendingMetaScript = null;
-  };
+    if (data && data.songtitle) {
+      updateNowPlaying(data.songtitle);
+    }
+  }
 
-  script.src = `https://play14.tikast.com:22012/stats?sid=1&json=1&callback=__rsMetadataHandler&_t=${Date.now()}`;
-  document.head.appendChild(script);
+  /**
+   * Realiza una petición JSONP del metadato actual de la emisora vía Shoutcast.
+   * Protegido estrictamente ante estado offline para no inyectar scripts innecesarios.
+   * @returns {void}
+   */
+  function fetchLiveTrack() {
+    if (!NetworkMonitor.isOnline()) return;
+
+    if (pendingMetaScript && pendingMetaScript.parentNode) {
+      pendingMetaScript.parentNode.removeChild(pendingMetaScript);
+      pendingMetaScript = null;
+    }
+    if (metaTimeoutId) {
+      clearTimeout(metaTimeoutId);
+      metaTimeoutId = null;
+    }
+
+    const script = document.createElement('script');
+    pendingMetaScript = script;
+
+    metaTimeoutId = setTimeout(() => {
+      if (pendingMetaScript && pendingMetaScript.parentNode) {
+        pendingMetaScript.parentNode.removeChild(pendingMetaScript);
+        pendingMetaScript = null;
+      }
+      metaTimeoutId = null;
+    }, SCRIPT_TIMEOUT_MS);
+
+    script.onerror = function() {
+      if (metaTimeoutId) {
+        clearTimeout(metaTimeoutId);
+        metaTimeoutId = null;
+      }
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+      pendingMetaScript = null;
+    };
+
+    script.src = `https://play14.tikast.com:22012/stats?sid=1&json=1&callback=__rsMetadataHandler&_t=${Date.now()}`;
+    if (document.head && typeof document.head.appendChild === 'function') {
+      document.head.appendChild(script);
+    }
+  }
+
+  /**
+   * Actualiza el intervalo adaptativo de sondeo de metadatos según estado de reproducción,
+   * visibilidad de pestaña y modo de ahorro de datos (Save-Data).
+   * @returns {void}
+   */
+  function updatePollingSchedule() {
+    if (metaPollInterval) {
+      clearInterval(metaPollInterval);
+      metaPollInterval = null;
+    }
+
+    if (!NetworkMonitor.isOnline()) return;
+
+    const isPlaying = typeof AudioController !== 'undefined' && typeof AudioController.isPlaying === 'function'
+      ? AudioController.isPlaying()
+      : (typeof audio !== 'undefined' && audio && !audio.paused);
+    const isHidden = !!(document && document.hidden);
+    const isSaveData = NetworkMonitor.isSaveDataEnabled();
+
+    let intervalMs;
+    if (isPlaying) {
+      if (isHidden) {
+        intervalMs = 30000;
+      } else {
+        intervalMs = isSaveData ? 16000 : 8000;
+      }
+    } else {
+      if (isHidden) {
+        intervalMs = 90000;
+      } else {
+        intervalMs = isSaveData ? 60000 : 30000;
+      }
+    }
+
+    metaPollInterval = setInterval(fetchLiveTrack, intervalMs);
+  }
+
+  /**
+   * Inicializa el módulo, vincula eventos de UI e inicia el ciclo de sondeo.
+   */
+  function init() {
+    resolveElements();
+
+    if (recentTracksToggleEl && recentTracksPanelEl) {
+      recentTracksToggleEl.addEventListener('click', () => {
+        const isHidden = recentTracksPanelEl.hasAttribute('hidden');
+        if (isHidden) {
+          recentTracksPanelEl.removeAttribute('hidden');
+          recentTracksToggleEl.setAttribute('aria-expanded', 'true');
+        } else {
+          recentTracksPanelEl.setAttribute('hidden', '');
+          recentTracksToggleEl.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    renderRecentTracks();
+    fetchLiveTrack();
+    updatePollingSchedule();
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && NetworkMonitor.isOnline()) {
+        fetchLiveTrack();
+      }
+      updatePollingSchedule();
+    });
+  }
+
+  init();
+
+  return {
+    init,
+    updateNowPlaying,
+    fetchLiveTrack,
+    updatePollingSchedule,
+    addRecentTrack,
+    renderRecentTracks,
+    buildWhatsAppDedicationUrl,
+    updateDedicationLinks,
+    updateMediaSession,
+    handleMetadataResponse,
+    getRecentTracks: () => recentTracks,
+    getCurrentTrack: () => currentTrackTitle,
+    getPendingScript: () => pendingMetaScript
+  };
+})();
+
+if (typeof window !== 'undefined') {
+  window.LiveTrackModule = LiveTrackModule;
+  window.MetadataService = LiveTrackModule;
+}
+
+const MetadataService = LiveTrackModule;
+
+// --- ALIASES DE COMPATIBILIDAD GLOBAL PARA SECCIONES 6 Y 7 ---
+let recentTracks = LiveTrackModule.getRecentTracks();
+
+function renderRecentTracks() {
+  return LiveTrackModule.renderRecentTracks();
+}
+
+function addRecentTrack(title) {
+  return LiveTrackModule.addRecentTrack(title);
+}
+
+function updateNowPlaying(payloadOrTitle) {
+  return LiveTrackModule.updateNowPlaying(payloadOrTitle);
+}
+
+function fetchLiveTrack() {
+  return LiveTrackModule.fetchLiveTrack();
 }
 
 function updatePollingSchedule() {
-  if (metaPollInterval) {
-    clearInterval(metaPollInterval);
-    metaPollInterval = null;
-  }
-
-  if (!NetworkMonitor.isOnline()) return;
-
-  const isPlaying = AudioController.isPlaying();
-  const isHidden = document.hidden;
-  const isSaveData = NetworkMonitor.isSaveDataEnabled();
-
-  let intervalMs;
-  if (isPlaying) {
-    if (isHidden) {
-      intervalMs = 30000;
-    } else {
-      intervalMs = isSaveData ? 16000 : 8000;
-    }
-  } else {
-    if (isHidden) {
-      intervalMs = 90000;
-    } else {
-      intervalMs = isSaveData ? 60000 : 30000;
-    }
-  }
-
-  metaPollInterval = setInterval(fetchLiveTrack, intervalMs);
+  return LiveTrackModule.updatePollingSchedule();
 }
 
-fetchLiveTrack();
-updatePollingSchedule();
+function buildWhatsAppDedicationUrl(title) {
+  return LiveTrackModule.buildWhatsAppDedicationUrl(title);
+}
 
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && NetworkMonitor.isOnline()) {
-    fetchLiveTrack();
-  }
-  updatePollingSchedule();
-});
+function __rsMetadataHandler(data) {
+  return LiveTrackModule.handleMetadataResponse(data);
+}
+
+if (typeof window !== 'undefined') {
+  window.__rsMetadataHandler = __rsMetadataHandler;
+}
 
 // --- 8. MÓDULO CARGA DIFERIDA DE CHAT (ChatLoader) ---
 const chatIframe = document.querySelector('#chat iframe[data-src]');
