@@ -15,14 +15,31 @@ class Element extends EventTarget {
     this.classList = {
       add: (...cls) => cls.forEach(c => this._classes.add(c)),
       remove: (...cls) => cls.forEach(c => this._classes.delete(c)),
-      contains: c => this._classes.has(c)
+      contains: c => this._classes.has(c),
+      toggle: (c, force) => {
+        const shouldAdd = typeof force === 'boolean' ? force : !this._classes.has(c);
+        if (shouldAdd) this._classes.add(c);
+        else this._classes.delete(c);
+        return shouldAdd;
+      }
     };
   }
   setAttribute(key, value) { this.attrs[key] = String(value); }
   getAttribute(key) { return this.attrs[key] ?? null; }
   removeAttribute(key) { delete this.attrs[key]; }
   hasAttribute(key) { return key in this.attrs; }
-  querySelector() { return null; }
+  querySelector(sel) {
+    for (const child of this.children) {
+      if (child instanceof Element) {
+        if (sel.startsWith('.') && (child.className || '').split(' ').includes(sel.slice(1))) return child;
+        if (sel.startsWith('#') && child.id === sel.slice(1)) return child;
+        if (sel === 'iframe' && (child.hasAttribute('data-src') || child.hasAttribute('src'))) return child;
+        const res = child.querySelector(sel);
+        if (res) return res;
+      }
+    }
+    return null;
+  }
   append(...children) { this.children.push(...children); }
   appendChild(child) { this.append(child); }
   replaceChildren(...children) { this.children = children; }
@@ -37,8 +54,30 @@ async function checkApp(stored) {
     '#mute-btn', '#sticky-mute-btn', '#recent-tracks-list',
     '#sticky-player', '#audio-status', '#weather-card', '#reproductor',
     '#sticky-top-btn', '#sleep-timer-btn', '#sleep-timer-text', '#sleep-cancel-btn',
-    '#pacha-clock'
+    '#pacha-clock', '#chat', '#chat-toggle-btn', '#chat-drawer'
   ].map(id => [id, new Element()]));
+
+  const chatCard = elements['#chat'];
+  const chatToggleBtn = elements['#chat-toggle-btn'];
+  chatToggleBtn.setAttribute('aria-expanded', 'false');
+  chatToggleBtn.setAttribute('aria-controls', 'chat-drawer');
+
+  const toggleText = new Element();
+  toggleText.className = 'chat-toggle-text';
+  toggleText.textContent = 'Abrir Chat en vivo';
+  const toggleArrow = new Element();
+  toggleArrow.className = 'chat-toggle-arrow';
+  toggleArrow.textContent = '▼';
+  chatToggleBtn.append(toggleText, toggleArrow);
+
+  const chatDrawer = elements['#chat-drawer'];
+  const chatIframe = new Element();
+  chatIframe.setAttribute('data-src', 'https://www3.cbox.ws/box/?boxid=3560755&boxtag=BrdrSs');
+  chatDrawer.append(chatIframe);
+  elements['#chat iframe[data-src]'] = chatIframe;
+  elements['#chat-drawer iframe[data-src]'] = chatIframe;
+  elements['#chat-drawer iframe'] = chatIframe;
+  elements['#chat iframe'] = chatIframe;
   const radio = elements['#radio'];
   radio.volume = 0.9;
   radio.muted = false;
@@ -124,7 +163,7 @@ async function checkApp(stored) {
   assert.equal(document.head.children.length, headChildCount, 'fetchLiveTrack must not inject scripts when offline');
   context.navigator.onLine = true;
 
-  // Local clock (La Pacha, America/Bogota) runtime assertions
+// Local clock (La Pacha, America/Bogota) runtime assertions
   const pachaClock = elements['#pacha-clock'];
   assert.ok(pachaClock.textContent !== '--:--', '#pacha-clock must initialize immediately on load');
   assert.ok(pachaClock.hasAttribute('datetime'), '#pacha-clock must set datetime attribute');
@@ -162,6 +201,29 @@ async function checkApp(stored) {
   document.dispatchEvent(new Event('visibilitychange'));
   document.visibilityState = 'visible';
   document.dispatchEvent(new Event('visibilitychange'));
+
+  // Mobile Collapsible Cbox Drawer deferred loading verification
+  assert.equal(chatToggleBtn.getAttribute('aria-expanded'), 'false');
+  assert.equal(chatToggleBtn.getAttribute('aria-controls'), 'chat-drawer');
+  assert.equal(chatCard.classList.contains('is-open'), false);
+  assert.equal(chatIframe.getAttribute('src'), null);
+
+  // Simulate toggle click: open drawer and verify deferred loading
+  chatToggleBtn.dispatchEvent(new Event('click'));
+  assert.equal(chatToggleBtn.getAttribute('aria-expanded'), 'true');
+  assert.equal(chatCard.classList.contains('is-open'), true);
+  assert.equal(chatIframe.getAttribute('src'), 'https://www3.cbox.ws/box/?boxid=3560755&boxtag=BrdrSs');
+  assert.equal(chatIframe.src, 'https://www3.cbox.ws/box/?boxid=3560755&boxtag=BrdrSs');
+  assert.equal(chatIframe.hasAttribute('data-src'), false);
+  assert.equal(toggleText.textContent, 'Cerrar Chat');
+  assert.equal(toggleArrow.textContent, '▲');
+
+  // Simulate toggle click: collapse drawer
+  chatToggleBtn.dispatchEvent(new Event('click'));
+  assert.equal(chatToggleBtn.getAttribute('aria-expanded'), 'false');
+  assert.equal(chatCard.classList.contains('is-open'), false);
+  assert.equal(toggleText.textContent, 'Abrir Chat en vivo');
+  assert.equal(toggleArrow.textContent, '▼');
 }
 
 async function checkWorker() {
@@ -283,7 +345,7 @@ function checkAssetsAndStyles() {
   assert.ok(manifest.icons.some(i => i.sizes === '192x192'), 'manifest.webmanifest must preserve 192x192 icon');
   assert.ok(manifest.icons.some(i => i.sizes === '512x512'), 'manifest.webmanifest must preserve 512x512 icon');
 
-  // Ticket 1: Canvas Fish Pond retired & Static SVG River Wave Divider present
+// Ticket 1: Canvas Fish Pond retired & Static SVG River Wave Divider present
   assert.ok(!html.includes('id="fish-canvas"'), 'index.html must not contain #fish-canvas');
   assert.ok(!html.includes('class="fish-pond-section"'), 'index.html must not contain .fish-pond-section');
   assert.ok(/class="river-divider"[^>]*aria-hidden="true"/.test(html) || /aria-hidden="true"[^>]*class="river-divider"/.test(html),
@@ -340,6 +402,19 @@ function checkBlogsSection() {
   // Verify Open-Meteo weather aside remains intact
   assert.ok(html.includes('id="clima-regional"'), 'index.html must preserve #clima-regional weather aside');
   assert.ok(html.includes('id="weather-card"'), 'index.html must preserve #weather-card');
+
+// Mobile Collapsible Cbox Drawer in index.html and styles.css
+  const chatToggleMatch = html.match(/<button[^>]+id=["']chat-toggle-btn["'][^>]*>/i);
+  assert.ok(chatToggleMatch, 'index.html must include #chat-toggle-btn');
+  assert.ok(chatToggleMatch[0].includes('aria-expanded="false"'), '#chat-toggle-btn must have initial aria-expanded="false"');
+  assert.ok(chatToggleMatch[0].includes('aria-controls="chat-drawer"'), '#chat-toggle-btn must have aria-controls="chat-drawer"');
+  assert.ok(html.includes('id="chat-drawer"'), 'index.html must include #chat-drawer');
+  assert.ok(html.includes('data-src="https://www3.cbox.ws/box/?boxid=3560755&amp;boxtag=BrdrSs"'),
+    'index.html chat iframe must have data-src configured');
+  assert.ok(css.includes('.chat-toggle-btn'), 'styles.css must include .chat-toggle-btn');
+  assert.ok(css.includes('.chat-drawer'), 'styles.css must include .chat-drawer');
+  assert.ok(css.includes('@media (min-width: 901px)'), 'styles.css must include desktop media query for chat drawer');
+  assert.ok(css.includes('@media (max-width: 900px)'), 'styles.css must include mobile media query for chat drawer');
 }
 
 function checkCloudflareConfigs() {
@@ -413,6 +488,6 @@ function checkInstitutionalIdentity() {
     await checkApp(stored);
   }
   await checkWorker();
-  console.log('PASS: Cloudflare headers & redirects, institutional identity compliance, blogs semantic refactor, safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, and low-bandwidth icon hygiene.');
+  console.log('PASS: Cloudflare headers & redirects, institutional identity compliance, blogs semantic refactor, safe history, stored-data validation, volume sync, scoped caches, offline fallback, cache refresh, install failure, sticky inert state, playback rejection routing, lean precache, clean CSS syntax, low-bandwidth icon hygiene, local clock, and mobile chat drawer with deferred loading.');
 })().catch(err => { console.error(err); process.exitCode = 1; });
 
