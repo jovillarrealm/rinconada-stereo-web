@@ -107,14 +107,14 @@ async function checkApp(stored) {
     URL, console, Math, Date
   });
   vm.runInContext(source('app.js'), context);
-  assert.ok(vm.runInContext('Array.isArray(recentTracks) && recentTracks.length <= 5', context));
+  assert.ok(vm.runInContext('Array.isArray(LiveTrackModule.getRecentTracks()) && LiveTrackModule.getRecentTracks().length <= 5', context));
   const title = '<img src=x onerror="alert(1)"> & canción';
-  vm.runInContext(`addRecentTrack(${JSON.stringify(title)})`, context);
+  vm.runInContext(`LiveTrackModule.addRecentTrack(${JSON.stringify(title)})`, context);
   const row = elements['#recent-tracks-list'].children[0];
   assert.equal(row.children[0].textContent, title);
   assert.equal(row.children[0].title, title);
   assert.equal(row.children[0].children.length, 0);
-  vm.runInContext('updateNowPlaying({ songtitle: 42 })', context);
+  vm.runInContext('LiveTrackModule.updateNowPlaying({ songtitle: 42 })', context);
   for (const id of ['#volume-slider', '#sticky-volume-slider']) {
     elements[id].value = '0.35';
     elements[id].dispatchEvent(new Event('input'));
@@ -135,18 +135,18 @@ async function checkApp(stored) {
 
   // Sticky visibility helper and inert/aria-hidden states
   const stickyPlayer = elements['#sticky-player'];
-  vm.runInContext('setStickyVisible(true)', context);
+  vm.runInContext('AudioController.setStickyVisible(true)', context);
   assert.equal(stickyPlayer.classList.contains('is-visible'), true);
   assert.equal(stickyPlayer.getAttribute('aria-hidden'), null);
   assert.equal(stickyPlayer.getAttribute('inert'), null);
-  vm.runInContext('setStickyVisible(false)', context);
+  vm.runInContext('AudioController.setStickyVisible(false)', context);
   assert.equal(stickyPlayer.classList.contains('is-visible'), false);
   assert.equal(stickyPlayer.getAttribute('aria-hidden'), 'true');
   assert.equal(stickyPlayer.getAttribute('inert'), '');
 
   // stopPlayback helper clears retry states and pauses audio
   radio.paused = false;
-  vm.runInContext('stopPlayback()', context);
+  vm.runInContext('AudioController.stopPlayback()', context);
   assert.equal(radio.paused, true);
 
   // Play rejection routing to error status
@@ -159,7 +159,7 @@ async function checkApp(stored) {
   // Offline safety: fetchLiveTrack should not inject script when offline
   context.navigator.onLine = false;
   const headChildCount = document.head.children.length;
-  vm.runInContext('fetchLiveTrack()', context);
+  vm.runInContext('LiveTrackModule.fetchLiveTrack()', context);
   assert.equal(document.head.children.length, headChildCount, 'fetchLiveTrack must not inject scripts when offline');
   context.navigator.onLine = true;
 

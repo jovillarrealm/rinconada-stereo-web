@@ -31,3 +31,7 @@ _Avoid_: Chatroom, foro, comentarios
 **Blogs de Interés**:
 Directorio de publicaciones digitales y crónicas comunitarias que preservan la memoria, la cultura ribereña y la música de acordeón del bajo Magdalena.
 _Avoid_: Enlaces externos, blogroll, noticias
+
+**Telemetría Territorial**:
+Conjunto de indicadores ambientales y temporales en tiempo real —condiciones meteorológicas de Open-Meteo y hora local sincronizada de La Pacha— que sitúan la transmisión en el contexto vivo de la ciénaga.
+_Avoid_: Widgets, clima app, reloj digital

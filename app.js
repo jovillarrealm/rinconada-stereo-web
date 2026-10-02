@@ -673,8 +673,8 @@ const AudioController = (function() {
           showFatalError();
         });
       } else {
-        if (typeof cancelSleepTimer === 'function') {
-          cancelSleepTimer();
+        if (typeof SleepTimer !== 'undefined' && SleepTimer && typeof SleepTimer.cancel === 'function') {
+          SleepTimer.cancel();
         }
         stopPlayback();
       }
@@ -1033,34 +1033,7 @@ if (typeof window !== 'undefined') {
   window.AudioController = AudioController;
 }
 
-// Alias de compatibilidad global para tests y scripts
-const audio = AudioController.getAudioElement();
-const stickyTrackTitle = document.querySelector('#sticky-track-title');
-const stickyWaBtn = document.querySelector('#sticky-wa-btn');
-
-function updateStickyStatus(type, label) {
-  return AudioController.updateStickyStatus(type, label);
-}
-
-function updateMuteIcons() {
-  return AudioController.syncVolumeUI();
-}
-
-function updatePlayPauseIcons(isPlaying) {
-  return AudioController.syncPlayPauseUI(isPlaying);
-}
-
-function setStickyVisible(isVisible) {
-  return AudioController.setStickyVisible(isVisible);
-}
-
-function stopPlayback() {
-  return AudioController.stopPlayback();
-}
-
-function playLiveStream() {
-  return AudioController.playLiveStream();
-}
+// AudioController expone su interfaz primaria
 
 // --- 5. MÓDULO TEMPORIZADOR DE APAGADO (SleepTimer) ---
 /**
@@ -1208,17 +1181,7 @@ const SleepTimer = (function() {
   };
 })();
 
-function resetSleepTimerUI() {
-  return SleepTimer.resetUI();
-}
-
-function cancelSleepTimer() {
-  return SleepTimer.cancel();
-}
-
-function startSleepTimer(minutes) {
-  return SleepTimer.start(minutes);
-}
+// SleepTimer expone su interfaz primaria
 
 // --- 6. MÓDULO INTEGRAL DE PISTA EN VIVO E HISTORIAL (LiveTrackModule) ---
 /**
@@ -1591,39 +1554,8 @@ if (typeof window !== 'undefined') {
 
 const MetadataService = LiveTrackModule;
 
-// --- ALIASES DE COMPATIBILIDAD GLOBAL PARA SECCIONES 6 Y 7 ---
-let recentTracks = LiveTrackModule.getRecentTracks();
-
-function renderRecentTracks() {
-  return LiveTrackModule.renderRecentTracks();
-}
-
-function addRecentTrack(title) {
-  return LiveTrackModule.addRecentTrack(title);
-}
-
-function updateNowPlaying(payloadOrTitle) {
-  return LiveTrackModule.updateNowPlaying(payloadOrTitle);
-}
-
-function fetchLiveTrack() {
-  return LiveTrackModule.fetchLiveTrack();
-}
-
-function updatePollingSchedule() {
-  return LiveTrackModule.updatePollingSchedule();
-}
-
-function buildWhatsAppDedicationUrl(title) {
-  return LiveTrackModule.buildWhatsAppDedicationUrl(title);
-}
-
-function __rsMetadataHandler(data) {
-  return LiveTrackModule.handleMetadataResponse(data);
-}
-
 if (typeof window !== 'undefined') {
-  window.__rsMetadataHandler = __rsMetadataHandler;
+  window.__rsMetadataHandler = (data) => LiveTrackModule.handleMetadataResponse(data);
 }
 
 // --- 8. MÓDULO CARGA DIFERIDA DE CHAT (ChatLoader) ---
