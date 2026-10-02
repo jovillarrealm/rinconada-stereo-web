@@ -1,6 +1,6 @@
 // Service Worker — Rinconada Stereo (recursos locales y modo sin conexión)
 const CACHE_PREFIX = `rinconada-stereo:${self.registration.scope}:`;
-const CACHE_NAME = `${CACHE_PREFIX}v6`;
+const CACHE_NAME = `${CACHE_PREFIX}v7`;
 
 // Recursos estáticos esenciales para el cascarón de la aplicación (App Shell)
 const PRECACHE_ASSETS = [

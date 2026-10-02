@@ -978,16 +978,19 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
 .chat-toggle-icon {
   font-size: 1.2rem;
   line-height: 1;
+  pointer-events: none;
 }
 
 .chat-toggle-text {
   letter-spacing: 0.01em;
+  pointer-events: none;
 }
 
 .chat-toggle-arrow {
   font-size: 0.75rem;
   display: inline-block;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
 }
 
 

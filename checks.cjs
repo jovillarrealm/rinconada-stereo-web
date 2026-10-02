@@ -43,7 +43,10 @@ class Element extends EventTarget {
   append(...children) { this.children.push(...children); }
   appendChild(child) { this.append(child); }
   replaceChildren(...children) { this.children = children; }
-  scrollIntoView() {}
+  scrollIntoView(options) {
+    this.scrollIntoViewCalled = true;
+    this.scrollIntoViewOptions = options;
+  }
   focus() {}
   getBoundingClientRect() { return { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 }; }
 }
@@ -73,6 +76,7 @@ async function checkApp(stored) {
   const chatDrawer = elements['#chat-drawer'];
   const chatIframe = new Element();
   chatIframe.setAttribute('data-src', 'https://www3.cbox.ws/box/?boxid=3560755&boxtag=BrdrSs');
+  chatIframe.setAttribute('loading', 'lazy');
   chatDrawer.append(chatIframe);
   elements['#chat iframe[data-src]'] = chatIframe;
   elements['#chat-drawer iframe[data-src]'] = chatIframe;
@@ -217,6 +221,8 @@ async function checkApp(stored) {
   assert.equal(chatIframe.hasAttribute('data-src'), false);
   assert.equal(toggleText.textContent, 'Cerrar Chat');
   assert.equal(toggleArrow.textContent, '▲');
+  assert.equal(chatCard.scrollIntoViewCalled, true, 'chatCard must be scrolled into view when drawer opens');
+  assert.equal(chatIframe.getAttribute('loading'), 'eager', 'chatIframe must switch to eager loading on user open');
 
   // Simulate toggle click: collapse drawer
   chatToggleBtn.dispatchEvent(new Event('click'));
@@ -257,7 +263,7 @@ async function checkApp(stored) {
 async function checkWorker() {
   const scope = 'https://example.test/rinconada/';
   const prefix = `rinconada-stereo:${scope}:`;
-  const cacheName = `${prefix}v6`;
+  const cacheName = `${prefix}v7`;
   const entries = new Map();
   const deleted = [];
   const handlers = {};
@@ -282,7 +288,7 @@ async function checkWorker() {
     },
     caches: {
       open: async name => { assert.equal(name, cacheName); return cache; },
-      keys: async () => [`${prefix}v5`, cacheName, 'other-site', 'rinconada-stereo:https://example.test/other/:v4'],
+      keys: async () => [`${prefix}v6`, cacheName, 'other-site', 'rinconada-stereo:https://example.test/other/:v4'],
       delete: async name => { deleted.push(name); return true; }
     },
     fetch: req => fetchImpl(req), URL, Response, console
@@ -309,7 +315,7 @@ async function checkWorker() {
   await lifecycle('install');
   assert.equal(skipped, 1);
   await lifecycle('activate');
-  assert.deepEqual(deleted, [`${prefix}v5`]);
+  assert.deepEqual(deleted, [`${prefix}v6`]);
 
   async function request(url, mode = 'navigate', destination = '') {
     const pending = [];
@@ -443,6 +449,7 @@ function checkBlogsSection() {
   assert.ok(css.includes('.chat-drawer'), 'styles.css must include .chat-drawer');
   assert.ok(css.includes('@media (min-width: 901px)'), 'styles.css must include desktop media query for chat drawer');
   assert.ok(css.includes('@media (max-width: 900px)'), 'styles.css must include mobile media query for chat drawer');
+  assert.ok(css.includes('pointer-events: none'), 'styles.css must set pointer-events: none on chat toggle children');
 }
 
 function checkCloudflareConfigs() {

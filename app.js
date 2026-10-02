@@ -1489,6 +1489,7 @@ const ChatLoader = (() => {
       iframe.src = realSrc;
       iframe.setAttribute('src', realSrc);
       iframe.removeAttribute('data-src');
+      iframe.setAttribute('loading', 'eager');
       chatLoaded = true;
     }
   };
@@ -1522,6 +1523,15 @@ const ChatLoader = (() => {
 
     if (willOpen) {
       loadChat();
+      if (!isWideScreen() && chatCard) {
+        if (typeof chatCard.scrollIntoView === 'function') {
+          try {
+            chatCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch (e) {
+            chatCard.scrollIntoView();
+          }
+        }
+      }
     }
   };
 
