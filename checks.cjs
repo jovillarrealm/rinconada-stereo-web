@@ -224,6 +224,34 @@ async function checkApp(stored) {
   assert.equal(chatCard.classList.contains('is-open'), false);
   assert.equal(toggleText.textContent, 'Abrir Chat en vivo');
   assert.equal(toggleArrow.textContent, '▼');
+
+  // Deep AudioController reactive state subscription and integrated SleepTimer
+  vm.runInContext(`
+    AudioController.subscribe((state) => {
+      globalThis.__testAudioState = state;
+    });
+  `, context);
+  const latestAudioState = vm.runInContext('globalThis.__testAudioState', context);
+  assert.ok(latestAudioState && typeof latestAudioState === 'object', 'AudioController.subscribe must emit state object');
+  assert.ok('playbackState' in latestAudioState, 'Audio state must include playbackState');
+  assert.ok('volume' in latestAudioState, 'Audio state must include volume');
+  assert.ok('isMuted' in latestAudioState, 'Audio state must include isMuted');
+  assert.equal(latestAudioState.sleepRemainingSec, null, 'sleepRemainingSec must initially be null');
+
+  // Test startSleepTimer and cancelSleepTimer inside AudioController
+  vm.runInContext('AudioController.startSleepTimer(30)', context);
+  const activeSleepState = vm.runInContext('globalThis.__testAudioState', context);
+  assert.ok(activeSleepState.sleepRemainingSec > 0, 'sleepRemainingSec must be positive when timer starts');
+  assert.equal(elements['#sleep-timer-btn'].classList.contains('is-active'), true, '#sleep-timer-btn must have is-active');
+  vm.runInContext('AudioController.cancelSleepTimer()', context);
+  const canceledSleepState = vm.runInContext('globalThis.__testAudioState', context);
+  assert.equal(canceledSleepState.sleepRemainingSec, null, 'sleepRemainingSec must be null when timer is canceled');
+  assert.equal(elements['#sleep-timer-btn'].classList.contains('is-active'), false, '#sleep-timer-btn must not have is-active');
+
+  // TerritoryTelemetry unified module assertions
+  assert.ok(vm.runInContext("typeof TerritoryTelemetry === 'object'", context), 'TerritoryTelemetry must be available');
+  assert.ok(vm.runInContext("typeof TerritoryTelemetry.getBogotaTime === 'function'", context), 'TerritoryTelemetry must export getBogotaTime');
+  assert.ok(vm.runInContext("typeof TerritoryTelemetry.fetchWeather === 'function'", context), 'TerritoryTelemetry must export fetchWeather');
 }
 
 async function checkWorker() {

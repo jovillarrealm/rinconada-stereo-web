@@ -422,36 +422,16 @@ if (document.readyState === 'loading') {
 // --- 4. MÓDULO DEL REPRODUCTOR DE AUDIO (AudioController) ---
 /**
  * Subsistema profundo de reproducción de audio.
- * Encapsula el elemento HTML5 Audio, sincronización bidireccional de interfaz dual
- * (reproductor principal y mini-reproductor flotante), motor de desvanecimiento suave (fade),
- * reconexión automática con retroceso exponencial, atajos globales e integración MediaSession.
+ * Encapsula el elemento HTML5 Audio, motor de desvanecimiento suave (fade),
+ * temporizador de apagado integrado, reconexión con retroceso exponencial,
+ * y emisión de estado reactivo mediante suscripciones.
  */
 const AudioController = (function() {
-  // Elementos DOM del reproductor principal
-  const audio = document.querySelector('#radio');
-  const statusEl = document.querySelector('#audio-status');
-  const playBtn = document.querySelector('#play-btn');
-  const iconPlay = playBtn ? playBtn.querySelector('.icon-play') : null;
-  const iconPause = playBtn ? playBtn.querySelector('.icon-pause') : null;
-  const muteBtn = document.querySelector('#mute-btn');
-  const iconVolOn = muteBtn ? muteBtn.querySelector('.icon-vol-on') : null;
-  const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
-  const volumeSlider = document.querySelector('#volume-slider');
-  const eqBars = document.querySelector('#eq-bars');
-
-  // Elementos DOM del mini-reproductor flotante (Sticky Bottom Player)
-  const stickyPlayer = document.querySelector('#sticky-player');
-  const stickyPlayBtn = document.querySelector('#sticky-play-btn');
-  const stickyIconPlay = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-play') : null;
-  const stickyIconPause = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-pause') : null;
-  const stickyMuteBtn = document.querySelector('#sticky-mute-btn');
-  const stickyIconVolOn = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-on') : null;
-  const stickyIconVolMute = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-mute') : null;
-  const stickyVolumeSlider = document.querySelector('#sticky-volume-slider');
-  const stickyStatusTag = document.querySelector('#sticky-status-tag');
-  const stickyStatusLabel = document.querySelector('#sticky-status-label');
-  const stickyTopBtn = document.querySelector('#sticky-top-btn');
-  const playerCardEl = document.querySelector('#reproductor');
+  const audio = typeof document !== 'undefined' ? document.querySelector('#radio') : null;
+  const statusEl = typeof document !== 'undefined' ? document.querySelector('#audio-status') : null;
+  const stickyStatusTag = typeof document !== 'undefined' ? document.querySelector('#sticky-status-tag') : null;
+  const stickyStatusLabel = typeof document !== 'undefined' ? document.querySelector('#sticky-status-label') : null;
+  const stickyPlayer = typeof document !== 'undefined' ? document.querySelector('#sticky-player') : null;
 
   // Claves de persistencia
   const VOL_STORAGE_KEY = 'rinconada_volume';
@@ -470,11 +450,64 @@ const AudioController = (function() {
     originalVolume: null
   };
 
+  // Temporizador de apagado interno (Sleep Timer Engine)
+  let sleepTimerId = null;
+  let sleepEndTime = null;
+
+  // Suscriptores de estado
+  const subscribers = [];
+
   const rawStreamSrc = (audio && (audio.getAttribute('src') || audio.src)) || 'https://play14.tikast.com:22012/stream';
   const baseStreamUrl = rawStreamSrc.split('?')[0];
 
   function getFreshStreamUrl() {
     return baseStreamUrl + '?t=' + Date.now();
+  }
+
+  function getSleepRemainingSec() {
+    if (!sleepTimerId || !sleepEndTime) return null;
+    return Math.max(0, Math.round((sleepEndTime - Date.now()) / 1000));
+  }
+
+  function getState() {
+    const isPlaying = !!(audio && !audio.paused);
+    let playbackState = 'idle';
+    if (isAutoRetrying) {
+      playbackState = 'loading';
+    } else if (isPlaying) {
+      playbackState = 'playing';
+    } else if (statusEl && statusEl.classList.contains('is-error')) {
+      playbackState = 'error';
+    }
+
+    return {
+      playbackState,
+      volume: audio ? audio.volume : 1,
+      isMuted: audio ? (audio.muted || audio.volume === 0) : false,
+      statusText: statusEl ? statusEl.textContent : '',
+      sleepRemainingSec: getSleepRemainingSec()
+    };
+  }
+
+  function notifySubscribers() {
+    const state = getState();
+    for (let i = 0; i < subscribers.length; i++) {
+      try {
+        subscribers[i](state);
+      } catch (e) {}
+    }
+  }
+
+  function subscribe(fn) {
+    if (typeof fn === 'function') {
+      subscribers.push(fn);
+      try { fn(getState()); } catch (e) {}
+      return () => {
+        const idx = subscribers.indexOf(fn);
+        if (idx !== -1) subscribers.splice(idx, 1);
+      };
+    }
+    return () => {};
   }
 
   function updateStickyStatus(type, label) {
@@ -493,59 +526,7 @@ const AudioController = (function() {
     if (stickyType !== undefined) {
       updateStickyStatus(stickyType, stickyLabel !== undefined ? stickyLabel : mainText);
     }
-  }
-
-  function updateMuteIcons() {
-    if (!audio) return;
-    const isMuted = audio.muted || audio.volume === 0;
-
-    // Iconos reproductor principal
-    if (iconVolOn && iconVolMute) {
-      iconVolOn.style.display = isMuted ? 'none' : 'block';
-      iconVolMute.style.display = isMuted ? 'block' : 'none';
-    }
-    if (muteBtn) {
-      muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-      muteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-      muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
-    }
-
-    // Iconos sticky player
-    if (stickyIconVolOn && stickyIconVolMute) {
-      stickyIconVolOn.style.display = isMuted ? 'none' : 'block';
-      stickyIconVolMute.style.display = isMuted ? 'block' : 'none';
-    }
-    if (stickyMuteBtn) {
-      stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-      stickyMuteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
-      stickyMuteBtn.setAttribute('aria-pressed', String(isMuted));
-    }
-
-    for (const slider of [volumeSlider, stickyVolumeSlider]) {
-      if (!slider) continue;
-      slider.value = isMuted ? 0 : audio.volume;
-      slider.setAttribute('aria-valuenow', slider.value);
-      slider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : Math.round(audio.volume * 100) + ' por ciento');
-    }
-  }
-
-  function updatePlayPauseIcons(isPlaying) {
-    if (iconPlay) iconPlay.style.display = isPlaying ? 'none' : 'block';
-    if (iconPause) iconPause.style.display = isPlaying ? 'block' : 'none';
-    if (playBtn) {
-      playBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-      playBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-    }
-    if (stickyIconPlay) stickyIconPlay.style.display = isPlaying ? 'none' : 'block';
-    if (stickyIconPause) stickyIconPause.style.display = isPlaying ? 'block' : 'none';
-    if (stickyPlayBtn) {
-      stickyPlayBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-      stickyPlayBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
-    }
-    if (eqBars) {
-      if (isPlaying) eqBars.classList.add('is-playing');
-      else eqBars.classList.remove('is-playing');
-    }
+    notifySubscribers();
   }
 
   function setStickyVisible(isVisible) {
@@ -572,16 +553,58 @@ const AudioController = (function() {
     }
     const target = Math.max(0, Math.min(1, fadeEngine.originalVolume * factor));
     audio.volume = target;
-    updateMuteIcons();
+    notifySubscribers();
   }
 
   function restoreVolume() {
     if (fadeEngine.isMidFade && fadeEngine.originalVolume !== null && audio) {
       audio.volume = fadeEngine.originalVolume;
-      updateMuteIcons();
+      notifySubscribers();
     }
     fadeEngine.isMidFade = false;
     fadeEngine.originalVolume = null;
+  }
+
+  function cancelSleepTimer() {
+    if (sleepTimerId) {
+      clearInterval(sleepTimerId);
+      sleepTimerId = null;
+    }
+    sleepEndTime = null;
+    restoreVolume();
+    notifySubscribers();
+  }
+
+  function startSleepTimer(minutes) {
+    cancelSleepTimer();
+    if (!audio) return;
+    const durationMs = minutes * 60 * 1000;
+    sleepEndTime = Date.now() + durationMs;
+
+    const updateCountdown = () => {
+      const remainingMs = sleepEndTime - Date.now();
+      const remainingSec = Math.round(remainingMs / 1000);
+
+      if (remainingSec <= 0) {
+        clearInterval(sleepTimerId);
+        sleepTimerId = null;
+        stopPlayback();
+        restoreVolume();
+        setStatus('', 'Temporizador finalizado · En pausa');
+        notifySubscribers();
+        return;
+      }
+
+      if (remainingSec <= 30) {
+        const factor = Math.max(0, remainingSec / 30);
+        fadeVolume(factor);
+      }
+      notifySubscribers();
+    };
+
+    updateCountdown();
+    sleepTimerId = setInterval(updateCountdown, 1000);
+    notifySubscribers();
   }
 
   function showFatalError() {
@@ -591,7 +614,6 @@ const AudioController = (function() {
     }
     isAutoRetrying = false;
     retryAttempt = 0;
-    updatePlayPauseIcons(false);
     setStatus('error', 'Error al conectar', 'error', 'Error al conectar');
   }
 
@@ -609,6 +631,7 @@ const AudioController = (function() {
     if (audio) {
       audio.pause();
     }
+    notifySubscribers();
   }
 
   function playLiveStream() {
@@ -625,386 +648,124 @@ const AudioController = (function() {
     }
     audio.volume = currentVol;
     audio.muted = currentMuted;
-    if (statusEl) {
-      statusEl.textContent = 'Conectando con la señal…';
-      statusEl.className = 'stream-status-tag is-connecting';
-    }
+    setStatus('connecting', 'Conectando con la señal…');
     return audio.play();
   }
 
   function initVolume() {
-    if (!audio || !volumeSlider) return;
-    const defaultVol = parseFloat(volumeSlider.value);
-    const validDefault = (!isNaN(defaultVol) && defaultVol >= 0 && defaultVol <= 1) ? defaultVol : 1;
-    const savedVol = StorageAdapter.local.getNumber(VOL_STORAGE_KEY, validDefault, (v) => v >= 0 && v <= 1);
+    if (!audio) return;
+    const defaultVol = 1;
+    const savedVol = StorageAdapter.local.getNumber(VOL_STORAGE_KEY, defaultVol, (v) => v >= 0 && v <= 1);
     audio.volume = savedVol;
-    volumeSlider.value = savedVol;
 
     if (StorageAdapter.local.getBoolean(MUTE_STORAGE_KEY, false)) {
       audio.muted = true;
     }
-    updateMuteIcons();
+    notifySubscribers();
   }
 
-  function init() {
-    if (!audio || !playBtn) return;
+  function setupNativeAudioEvents() {
+    if (!audio) return;
 
-    initVolume();
-
-    // Estado inicial de conectividad
-    if (!NetworkMonitor.isOnline() && statusEl) {
-      statusEl.textContent = 'Sin conexión a internet';
-      statusEl.className = 'stream-status-tag is-error';
-    }
-
-    playBtn.addEventListener('click', () => {
-      if (audio.paused) {
-        if (!NetworkMonitor.isOnline()) {
-          if (statusEl) {
-            statusEl.textContent = 'Sin conexión a internet';
-            statusEl.className = 'stream-status-tag is-error';
-          }
-          return;
-        }
-        isAutoRetrying = false;
-        retryAttempt = 0;
-        playLiveStream().catch((err) => {
-          if (err && err.name === 'AbortError') return;
-          showFatalError();
-        });
-      } else {
-        if (typeof SleepTimer !== 'undefined' && SleepTimer && typeof SleepTimer.cancel === 'function') {
-          SleepTimer.cancel();
-        }
-        stopPlayback();
-      }
-    });
-
-    if (stickyPlayBtn) {
-      stickyPlayBtn.addEventListener('click', () => {
-        playBtn.click();
-      });
-    }
-
-    // Sincronización de volumen y guardado en almacenamiento local
-    audio.addEventListener('volumechange', updateMuteIcons);
-    for (const slider of [volumeSlider, stickyVolumeSlider]) {
-      if (!slider) continue;
-      slider.addEventListener('input', () => {
-        if (fadeEngine.isMidFade) {
-          fadeEngine.isMidFade = false;
-          fadeEngine.originalVolume = null;
-        }
-        audio.volume = Number(slider.value);
-        audio.muted = (audio.volume === 0);
-        StorageAdapter.local.setNumber(VOL_STORAGE_KEY, audio.volume);
-        StorageAdapter.local.setBoolean(MUTE_STORAGE_KEY, audio.muted);
-        updateMuteIcons();
-      });
-    }
-
-    if (muteBtn) {
-      muteBtn.addEventListener('click', () => {
-        if (fadeEngine.isMidFade) {
-          fadeEngine.isMidFade = false;
-          fadeEngine.originalVolume = null;
-        }
-        audio.muted = !audio.muted;
-        if (!audio.muted && audio.volume === 0) {
-          audio.volume = 0.5;
-          if (volumeSlider) volumeSlider.value = 0.5;
-          if (stickyVolumeSlider) stickyVolumeSlider.value = 0.5;
-        }
-        StorageAdapter.local.setBoolean(MUTE_STORAGE_KEY, audio.muted);
-        StorageAdapter.local.setNumber(VOL_STORAGE_KEY, audio.volume);
-        updateMuteIcons();
-      });
-    }
-
-    if (stickyMuteBtn) {
-      stickyMuteBtn.addEventListener('click', () => {
-        if (muteBtn) muteBtn.click();
-      });
-    }
-
-    // Desplazamiento suave al reproductor principal desde el sticky player
-    if (stickyTopBtn && playerCardEl) {
-      stickyTopBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const cardRect = (typeof playerCardEl.getBoundingClientRect === 'function')
-          ? playerCardEl.getBoundingClientRect()
-          : { top: 0 };
-        const pageY = (typeof window.pageYOffset === 'number') ? window.pageYOffset : (window.scrollY || 0);
-        const targetY = Math.max(0, pageY + cardRect.top - 80);
-        if (typeof window.scrollTo === 'function') {
-          window.scrollTo({ top: targetY, behavior: 'smooth' });
-        }
-        if (playBtn && typeof playBtn.focus === 'function') {
-          setTimeout(() => playBtn.focus(), 350);
-        }
-      });
-    }
-
-    // Visibilidad del Sticky Player con limitación por requestAnimationFrame
-    if (stickyPlayer && playerCardEl) {
-      let isScrollTicking = false;
-
-      const updateStickyVisibility = () => {
-        if (typeof playerCardEl.getBoundingClientRect !== 'function') return;
-        const rect = playerCardEl.getBoundingClientRect();
-        const isPastControls = (rect.top < -100);
-        const isPastCard = (rect.bottom < 200);
-        const isScrolledDown = window.scrollY > 240;
-
-        if ((isPastControls || isPastCard) && isScrolledDown) {
-          setStickyVisible(true);
-        } else if (rect.top >= -60 || window.scrollY < 180) {
-          setStickyVisible(false);
-        }
-      };
-
-      const onScrollOrResizeThrottled = () => {
-        if (!isScrollTicking) {
-          if (typeof window.requestAnimationFrame === 'function') {
-            window.requestAnimationFrame(() => {
-              updateStickyVisibility();
-              isScrollTicking = false;
-            });
-          } else {
-            updateStickyVisibility();
-            isScrollTicking = false;
-          }
-          isScrollTicking = true;
-        }
-      };
-
-      if ('IntersectionObserver' in window) {
-        const stickyObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            const rect = entry.boundingClientRect;
-            if (!entry.isIntersecting && rect.top < 0 && window.scrollY > 240) {
-              setStickyVisible(true);
-            } else if (entry.isIntersecting && rect.top > -60) {
-              setStickyVisible(false);
-            }
-          });
-        }, { threshold: 0.1 });
-        stickyObserver.observe(playerCardEl);
-      }
-
-      window.addEventListener('scroll', onScrollOrResizeThrottled, { passive: true });
-      window.addEventListener('resize', onScrollOrResizeThrottled, { passive: true });
-      updateStickyVisibility();
-    }
-
-    // Eventos nativos del elemento de audio
     audio.addEventListener('play', () => {
-      updatePlayPauseIcons(true);
-      updateStickyStatus('connecting', 'Conectando…');
+      isAutoRetrying = false;
+      retryAttempt = 0;
+      setStatus('', 'En vivo', '', 'En vivo');
     });
 
     audio.addEventListener('playing', () => {
       isAutoRetrying = false;
       retryAttempt = 0;
-      updatePlayPauseIcons(true);
-      updateStickyStatus('playing', 'En directo');
-      if (statusEl) {
-        statusEl.textContent = 'Conectado · Señal en directo';
-        statusEl.className = 'stream-status-tag is-playing';
-      }
-      if (typeof fetchLiveTrack === 'function') {
-        fetchLiveTrack();
-      }
-      if (typeof updatePollingSchedule === 'function') {
-        updatePollingSchedule();
-      }
-    });
-
-    audio.addEventListener('waiting', () => {
-      updateStickyStatus('connecting', 'Conectando…');
-      if (statusEl) {
-        statusEl.textContent = 'Conectando con la señal…';
-        statusEl.className = 'stream-status-tag is-connecting';
-      }
-    });
-
-    audio.addEventListener('stalled', () => {
-      if (audio && !audio.paused && NetworkMonitor.isOnline()) {
-        updateStickyStatus('connecting', 'Buffering…');
-        if (statusEl) {
-          statusEl.textContent = 'Almacenando búfer de señal…';
-          statusEl.className = 'stream-status-tag is-connecting';
-        }
-      }
+      setStatus('', 'En vivo', '', 'En vivo');
     });
 
     audio.addEventListener('pause', () => {
-      if (isAutoRetrying) return;
-      updatePlayPauseIcons(false);
-      updateStickyStatus('paused', 'En pausa');
-      if (statusEl) {
-        if (!NetworkMonitor.isOnline() || wasPlayingBeforeOffline) {
-          statusEl.textContent = 'Sin conexión a internet';
-          statusEl.className = 'stream-status-tag is-error';
-          updateStickyStatus('error', 'Sin internet');
-        } else {
-          statusEl.textContent = 'Señal en pausa';
-          statusEl.className = 'stream-status-tag';
-        }
-      }
-      if (typeof updatePollingSchedule === 'function') {
-        updatePollingSchedule();
+      if (!isAutoRetrying) {
+        setStatus('', 'En pausa', '', 'En pausa');
       }
     });
 
-    // Reintento con backoff exponencial para redes celulares intermitentes (2G/3G rural)
+    audio.addEventListener('volumechange', () => {
+      notifySubscribers();
+    });
+
+    audio.addEventListener('waiting', () => {
+      if (!audio.paused && !isAutoRetrying) {
+        setStatus('connecting', 'Cargando señal…');
+      }
+    });
+
     audio.addEventListener('error', () => {
+      if (audio.paused && !isAutoRetrying) return;
       if (!NetworkMonitor.isOnline()) {
-        if (statusEl) {
-          statusEl.textContent = 'Sin conexión a internet';
-          statusEl.className = 'stream-status-tag is-error';
-        }
+        setStatus('error', 'Sin señal · Conexión perdida', 'error', 'Sin señal');
         return;
       }
-
-      if (retryAttempt >= MAX_AUTO_RETRIES) {
-        showFatalError();
-      } else {
+      if (retryAttempt < MAX_AUTO_RETRIES) {
         retryAttempt++;
         isAutoRetrying = true;
-        const backoffDelay = retryAttempt === 1 ? 2500 : (retryAttempt === 2 ? 5000 : 10000);
-
-        if (statusEl) {
-          statusEl.textContent = 'Reconectando señal (' + retryAttempt + '/' + MAX_AUTO_RETRIES + ')…';
-          statusEl.className = 'stream-status-tag is-connecting';
-        }
-        updateStickyStatus('connecting', 'Reconectando…');
-
-        if (retryTimeout) clearTimeout(retryTimeout);
+        const delay = Math.min(1000 * Math.pow(2, retryAttempt), 8000);
+        setStatus('connecting', 'Reintentando señal (' + retryAttempt + '/' + MAX_AUTO_RETRIES + ')…');
         retryTimeout = setTimeout(() => {
-          retryTimeout = null;
-          playLiveStream().catch((err) => {
-            if (err && err.name === 'AbortError') return;
-            if (retryAttempt >= MAX_AUTO_RETRIES) {
-              showFatalError();
-            }
-          });
-        }, backoffDelay);
+          if (!audio.paused || isAutoRetrying) {
+            playLiveStream().catch(() => {
+              if (retryAttempt >= MAX_AUTO_RETRIES) showFatalError();
+            });
+          }
+        }, delay);
+      } else {
+        showFatalError();
       }
     });
 
-    // Eventos de conectividad del navegador
+    // Manejo de desconexión y reconexión de red
     window.addEventListener('offline', () => {
-      if (retryTimeout) {
-        clearTimeout(retryTimeout);
-        retryTimeout = null;
-        isAutoRetrying = false;
-        retryAttempt = 0;
-      }
-      const isAudioPlaying = audio && !audio.paused;
-      if (isAudioPlaying) {
+      if (audio && !audio.paused) {
         wasPlayingBeforeOffline = true;
         audio.pause();
       }
-      if (statusEl) {
-        statusEl.textContent = 'Sin conexión a internet';
-        statusEl.className = 'stream-status-tag is-error';
-      }
-      updateStickyStatus('error', 'Sin internet');
+      setStatus('error', 'Sin conexión a internet', 'error', 'Sin internet');
     });
 
     window.addEventListener('online', () => {
       if (wasPlayingBeforeOffline) {
         wasPlayingBeforeOffline = false;
-        if (statusEl) {
-          statusEl.textContent = 'Conectando con la señal…';
-          statusEl.className = 'stream-status-tag is-connecting';
-        }
-        isAutoRetrying = false;
-        retryAttempt = 0;
-        playLiveStream().catch((err) => {
-          if (err && err.name === 'AbortError') return;
-          showFatalError();
-        });
-      } else if (statusEl && audio && audio.paused) {
-        statusEl.textContent = 'Señal en pausa';
-        statusEl.className = 'stream-status-tag';
+        setStatus('connecting', 'Recuperando señal…');
+        playLiveStream().catch(() => showFatalError());
+      } else if (audio && audio.paused) {
+        setStatus('', 'En pausa', '', 'En pausa');
       }
     });
 
-    // MediaSession API para controles del sistema
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => {
-        if (!NetworkMonitor.isOnline()) {
-          if (statusEl) {
-            statusEl.textContent = 'Sin conexión a internet';
-            statusEl.className = 'stream-status-tag is-error';
-          }
-          return;
-        }
-        isAutoRetrying = false;
-        retryAttempt = 0;
-        playLiveStream().catch((err) => {
-          if (err && err.name === 'AbortError') return;
-          showFatalError();
-        });
-      });
-
-      navigator.mediaSession.setActionHandler('pause', () => {
-        if (typeof cancelSleepTimer === 'function') {
-          cancelSleepTimer();
-        }
-        stopPlayback();
-      });
-    }
-
-    // Atajos globales de teclado (Espacio, K, M) respetando accesibilidad
+    // Atajos de teclado accesibles
     window.addEventListener('keydown', (e) => {
-      if (e.altKey || e.ctrlKey || e.metaKey || e.repeat) return;
-
-      const active = document.activeElement;
-      if (active) {
-        const tagName = active.tagName;
-        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || active.isContentEditable) {
-          return;
+      const tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        if (audio.paused) playLiveStream().catch(() => showFatalError());
+        else {
+          cancelSleepTimer();
+          stopPlayback();
         }
-      }
-
-      const isSpace = (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space');
-      const isKeyK = (e.key === 'k' || e.key === 'K');
-      const isKeyM = (e.key === 'm' || e.key === 'M');
-
-      if (isSpace) {
-        const isInteractive = active && (
-          active.tagName === 'BUTTON' ||
-          active.tagName === 'A' ||
-          active.tagName === 'SUMMARY' ||
-          active.tagName === 'IFRAME' ||
-          (typeof active.getAttribute === 'function' && (
-            active.getAttribute('role') === 'button' ||
-            active.getAttribute('role') === 'application'
-          ))
-        );
-
-        if (isInteractive) return;
-
+      } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
-        if (playBtn) playBtn.click();
-        return;
-      }
-
-      if (isKeyK) {
-        e.preventDefault();
-        if (playBtn) playBtn.click();
-        return;
-      }
-
-      if (isKeyM) {
-        e.preventDefault();
-        if (muteBtn) muteBtn.click();
-        return;
+        audio.muted = !audio.muted;
+        StorageAdapter.local.setBoolean(MUTE_STORAGE_KEY, audio.muted);
+        notifySubscribers();
       }
     });
+  }
+
+  function init() {
+    if (!audio) return;
+    initVolume();
+    setupNativeAudioEvents();
+
+    if (!NetworkMonitor.isOnline() && statusEl) {
+      statusEl.textContent = 'Sin conexión a internet';
+      statusEl.className = 'stream-status-tag is-error';
+    }
   }
 
   init();
@@ -1015,32 +776,215 @@ const AudioController = (function() {
     playLiveStream,
     stopPlayback,
     setStickyVisible,
-    syncVolumeUI: updateMuteIcons,
-    syncPlayPauseUI: updatePlayPauseIcons,
+    syncVolumeUI: notifySubscribers,
+    syncPlayPauseUI: notifySubscribers,
     updateStickyStatus,
-    updateMuteIcons,
-    updatePlayPauseIcons,
     setStatus,
     fade: fadeVolume,
     fadeVolume,
     restoreFade: restoreVolume,
     restoreVolume,
     isFading: () => fadeEngine.isMidFade,
-    handleFatalError: showFatalError
+    handleFatalError: showFatalError,
+    // Nuevas capacidades profundas
+    subscribe,
+    getState,
+    startSleepTimer,
+    cancelSleepTimer,
+    getSleepRemainingSec,
+    VOL_STORAGE_KEY,
+    MUTE_STORAGE_KEY
   };
 })();
 if (typeof window !== 'undefined') {
   window.AudioController = AudioController;
 }
 
-// AudioController expone su interfaz primaria
+// --- PRESENTADOR DE LA TARJETA PRINCIPAL (MainPlayerPresenter) ---
+const MainPlayerPresenter = (function() {
+  const playBtn = document.querySelector('#play-btn');
+  const iconPlay = playBtn ? playBtn.querySelector('.icon-play') : null;
+  const iconPause = playBtn ? playBtn.querySelector('.icon-pause') : null;
+  const muteBtn = document.querySelector('#mute-btn');
+  const iconVolOn = muteBtn ? muteBtn.querySelector('.icon-vol-on') : null;
+  const iconVolMute = muteBtn ? muteBtn.querySelector('.icon-vol-mute') : null;
+  const volumeSlider = document.querySelector('#volume-slider');
+  const eqBars = document.querySelector('#eq-bars');
 
-// --- 5. MÓDULO TEMPORIZADOR DE APAGADO (SleepTimer) ---
-/**
- * Módulo de apagado programado.
- * Gestiona el menú, cuenta regresiva y orquesta el apagado gradual delegando
- * completamente el control de volumen, desvanecimiento y estados a AudioController.
- */
+  function init() {
+    const audio = AudioController.getAudioElement();
+    if (!audio) return;
+
+    if (playBtn) {
+      playBtn.addEventListener('click', () => {
+        if (audio.paused) {
+          if (!NetworkMonitor.isOnline()) {
+            AudioController.setStatus('error', 'Sin conexión a internet');
+            return;
+          }
+          AudioController.playLiveStream().catch((err) => {
+            if (err && err.name === 'AbortError') return;
+            AudioController.handleFatalError();
+          });
+        } else {
+          AudioController.cancelSleepTimer();
+          AudioController.stopPlayback();
+        }
+      });
+    }
+
+    if (volumeSlider) {
+      volumeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (audio && !isNaN(val)) {
+          audio.volume = val;
+          audio.muted = false;
+          StorageAdapter.local.setNumber(AudioController.VOL_STORAGE_KEY, val);
+          StorageAdapter.local.setBoolean(AudioController.MUTE_STORAGE_KEY, false);
+          AudioController.syncVolumeUI();
+        }
+      });
+    }
+
+    if (muteBtn) {
+      muteBtn.addEventListener('click', () => {
+        if (!audio) return;
+        audio.muted = !audio.muted;
+        StorageAdapter.local.setBoolean(AudioController.MUTE_STORAGE_KEY, audio.muted);
+        AudioController.syncVolumeUI();
+      });
+    }
+
+    // Suscripción reactiva para sincronizar la UI principal
+    AudioController.subscribe((state) => {
+      const isPlaying = state.playbackState === 'playing';
+      if (iconPlay) iconPlay.style.display = isPlaying ? 'none' : 'block';
+      if (iconPause) iconPause.style.display = isPlaying ? 'block' : 'none';
+      if (playBtn) {
+        playBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+        playBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+      }
+      if (eqBars) {
+        if (isPlaying) eqBars.classList.add('is-playing');
+        else eqBars.classList.remove('is-playing');
+      }
+
+      // Iconos de volumen y deslizador
+      const isMuted = state.isMuted;
+      if (iconVolOn && iconVolMute) {
+        iconVolOn.style.display = isMuted ? 'none' : 'block';
+        iconVolMute.style.display = isMuted ? 'block' : 'none';
+      }
+      if (muteBtn) {
+        muteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+        muteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+        muteBtn.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
+      }
+      if (volumeSlider) {
+        volumeSlider.value = isMuted ? 0 : state.volume;
+        volumeSlider.setAttribute('aria-valuenow', volumeSlider.value);
+        volumeSlider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : Math.round(state.volume * 100) + ' por ciento');
+      }
+    });
+  }
+
+  init();
+  return { init };
+})();
+
+// --- PRESENTADOR DE LA BARRA FLOTANTE (StickyPlayerPresenter) ---
+const StickyPlayerPresenter = (function() {
+  const stickyPlayBtn = document.querySelector('#sticky-play-btn');
+  const stickyIconPlay = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-play') : null;
+  const stickyIconPause = stickyPlayBtn ? stickyPlayBtn.querySelector('.icon-pause') : null;
+  const stickyMuteBtn = document.querySelector('#sticky-mute-btn');
+  const stickyIconVolOn = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-on') : null;
+  const stickyIconVolMute = stickyMuteBtn ? stickyMuteBtn.querySelector('.icon-vol-mute') : null;
+  const stickyVolumeSlider = document.querySelector('#sticky-volume-slider');
+  const stickyTopBtn = document.querySelector('#sticky-top-btn');
+  const playerCardEl = document.querySelector('#reproductor');
+
+  function init() {
+    const audio = AudioController.getAudioElement();
+    if (!audio) return;
+
+    if (stickyPlayBtn) {
+      stickyPlayBtn.addEventListener('click', () => {
+        const playBtn = document.querySelector('#play-btn');
+        if (playBtn) playBtn.click();
+      });
+    }
+
+    if (stickyVolumeSlider) {
+      stickyVolumeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (audio && !isNaN(val)) {
+          audio.volume = val;
+          audio.muted = false;
+          StorageAdapter.local.setNumber(AudioController.VOL_STORAGE_KEY, val);
+          StorageAdapter.local.setBoolean(AudioController.MUTE_STORAGE_KEY, false);
+          AudioController.syncVolumeUI();
+        }
+      });
+    }
+
+    if (stickyMuteBtn) {
+      stickyMuteBtn.addEventListener('click', () => {
+        const muteBtn = document.querySelector('#mute-btn');
+        if (muteBtn) muteBtn.click();
+      });
+    }
+
+    if (stickyTopBtn) {
+      stickyTopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // Observador de visibilidad para la barra sticky
+    if (playerCardEl && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        for (let i = 0; i < entries.length; i++) {
+          AudioController.setStickyVisible(!entries[i].isIntersecting);
+        }
+      }, { threshold: 0.1 });
+      observer.observe(playerCardEl);
+    }
+
+    // Suscripción reactiva para sincronizar la barra sticky
+    AudioController.subscribe((state) => {
+      const isPlaying = state.playbackState === 'playing';
+      if (stickyIconPlay) stickyIconPlay.style.display = isPlaying ? 'none' : 'block';
+      if (stickyIconPause) stickyIconPause.style.display = isPlaying ? 'block' : 'none';
+      if (stickyPlayBtn) {
+        stickyPlayBtn.setAttribute('aria-label', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+        stickyPlayBtn.setAttribute('title', isPlaying ? 'Pausar señal en vivo' : 'Reproducir señal en vivo');
+      }
+
+      const isMuted = state.isMuted;
+      if (stickyIconVolOn && stickyIconVolMute) {
+        stickyIconVolOn.style.display = isMuted ? 'none' : 'block';
+        stickyIconVolMute.style.display = isMuted ? 'block' : 'none';
+      }
+      if (stickyMuteBtn) {
+        stickyMuteBtn.setAttribute('aria-label', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+        stickyMuteBtn.setAttribute('title', isMuted ? 'Activar sonido' : 'Silenciar sonido');
+        stickyMuteBtn.setAttribute('aria-pressed', String(isMuted));
+      }
+      if (stickyVolumeSlider) {
+        stickyVolumeSlider.value = isMuted ? 0 : state.volume;
+        stickyVolumeSlider.setAttribute('aria-valuenow', stickyVolumeSlider.value);
+        stickyVolumeSlider.setAttribute('aria-valuetext', isMuted ? 'Silenciado' : Math.round(state.volume * 100) + ' por ciento');
+      }
+    });
+  }
+
+  init();
+  return { init };
+})();
+
+// --- 5. MÓDULO TEMPORIZADOR DE APAGADO (SleepTimer - Adaptador UI) ---
 const SleepTimer = (function() {
   const sleepTimerBtn = document.querySelector('#sleep-timer-btn');
   const sleepTimerMenu = document.querySelector('#sleep-timer-menu');
@@ -1048,87 +992,37 @@ const SleepTimer = (function() {
   const sleepCancelBtn = document.querySelector('#sleep-cancel-btn');
   const sleepMenuItems = document.querySelectorAll ? document.querySelectorAll('.sleep-menu-item[data-minutes]') : [];
 
-  let sleepTimerId = null;
-  let sleepEndTime = null;
-
-  function resetSleepTimerUI() {
-    if (sleepTimerText) sleepTimerText.textContent = 'Dormir';
-    if (sleepTimerBtn) {
-      sleepTimerBtn.classList.remove('is-active');
-      sleepTimerBtn.setAttribute('title', 'Temporizador de apagado');
-      sleepTimerBtn.setAttribute('aria-label', 'Dormir — Temporizador de apagado');
-    }
-    if (sleepCancelBtn) sleepCancelBtn.disabled = true;
-    if (sleepMenuItems && sleepMenuItems.forEach) {
-      sleepMenuItems.forEach(item => item.classList.remove('is-selected'));
-    }
-  }
-
-  function cancelSleepTimer() {
-    if (sleepTimerId) {
-      clearInterval(sleepTimerId);
-      sleepTimerId = null;
-    }
-    sleepEndTime = null;
-    AudioController.restoreFade();
-    resetSleepTimerUI();
-  }
-
-  function startSleepTimer(minutes) {
-    cancelSleepTimer();
-    if (!AudioController.getAudioElement()) return;
-    const durationMs = minutes * 60 * 1000;
-    sleepEndTime = Date.now() + durationMs;
-
-    if (sleepTimerBtn) sleepTimerBtn.classList.add('is-active');
-    if (sleepCancelBtn) sleepCancelBtn.disabled = false;
-
-    if (sleepMenuItems && sleepMenuItems.forEach) {
-      sleepMenuItems.forEach(item => {
-        const itemMins = parseInt(item.dataset && item.dataset.minutes, 10);
-        if (itemMins === minutes) {
-          item.classList.add('is-selected');
-        } else {
-          item.classList.remove('is-selected');
-        }
-      });
-    }
-
-    const updateCountdown = () => {
-      const remainingMs = sleepEndTime - Date.now();
-      const remainingSec = Math.round(remainingMs / 1000);
-
-      if (remainingSec <= 0) {
-        clearInterval(sleepTimerId);
-        sleepTimerId = null;
-        AudioController.stopPlayback();
-        AudioController.restoreFade();
-        resetSleepTimerUI();
-        AudioController.setStatus('', 'Temporizador finalizado · En pausa');
-        return;
-      }
-
+  function updateUI(remainingSec) {
+    if (remainingSec !== null && remainingSec > 0) {
       const mins = Math.floor(remainingSec / 60);
       const secs = remainingSec % 60;
       const label = mins > 0 ? mins + 'm' : secs + 's';
       if (sleepTimerText) sleepTimerText.textContent = label;
       if (sleepTimerBtn) {
+        sleepTimerBtn.classList.add('is-active');
         sleepTimerBtn.setAttribute('title', 'Apagado programado en ' + label);
         sleepTimerBtn.setAttribute('aria-label', 'Dormir — ' + label + ' restantes para apagar la transmisión');
       }
-
-      // Desvanecimiento suave en los últimos 30 segundos encapsulado en AudioController
-      if (remainingSec <= 30) {
-        const factor = Math.max(0, remainingSec / 30);
-        AudioController.fade(factor);
+      if (sleepCancelBtn) sleepCancelBtn.disabled = false;
+    } else {
+      if (sleepTimerText) sleepTimerText.textContent = 'Dormir';
+      if (sleepTimerBtn) {
+        sleepTimerBtn.classList.remove('is-active');
+        sleepTimerBtn.setAttribute('title', 'Temporizador de apagado');
+        sleepTimerBtn.setAttribute('aria-label', 'Dormir — Temporizador de apagado');
       }
-    };
-
-    updateCountdown();
-    sleepTimerId = setInterval(updateCountdown, 1000);
+      if (sleepCancelBtn) sleepCancelBtn.disabled = true;
+      if (sleepMenuItems && sleepMenuItems.forEach) {
+        sleepMenuItems.forEach(item => item.classList.remove('is-selected'));
+      }
+    }
   }
 
   function init() {
+    AudioController.subscribe((state) => {
+      updateUI(state.sleepRemainingSec);
+    });
+
     if (sleepTimerBtn && sleepTimerMenu) {
       sleepTimerBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1161,11 +1055,23 @@ const SleepTimer = (function() {
         sleepMenuItems.forEach(item => {
           item.addEventListener('click', () => {
             const mins = parseInt(item.dataset && item.dataset.minutes, 10);
-            if (mins > 0) startSleepTimer(mins);
-            else cancelSleepTimer();
+            if (mins > 0) {
+              item.classList.add('is-selected');
+              AudioController.startSleepTimer(mins);
+            } else {
+              AudioController.cancelSleepTimer();
+            }
             sleepTimerMenu.setAttribute('hidden', '');
             sleepTimerBtn.setAttribute('aria-expanded', 'false');
           });
+        });
+      }
+
+      if (sleepCancelBtn) {
+        sleepCancelBtn.addEventListener('click', () => {
+          AudioController.cancelSleepTimer();
+          sleepTimerMenu.setAttribute('hidden', '');
+          sleepTimerBtn.setAttribute('aria-expanded', 'false');
         });
       }
     }
@@ -1174,14 +1080,15 @@ const SleepTimer = (function() {
   init();
 
   return {
-    start: startSleepTimer,
-    cancel: cancelSleepTimer,
-    resetUI: resetSleepTimerUI,
-    isActive: () => sleepTimerId !== null
+    start: (mins) => AudioController.startSleepTimer(mins),
+    cancel: () => AudioController.cancelSleepTimer(),
+    resetUI: () => updateUI(null),
+    isActive: () => AudioController.getSleepRemainingSec() !== null
   };
 })();
-
-// SleepTimer expone su interfaz primaria
+if (typeof window !== 'undefined') {
+  window.SleepTimer = SleepTimer;
+}
 
 // --- 6. MÓDULO INTEGRAL DE PISTA EN VIVO E HISTORIAL (LiveTrackModule) ---
 /**
@@ -1679,227 +1586,68 @@ if (typeof window !== 'undefined') {
   window.ChatLoader = ChatLoader;
 }
 
-// --- 9. MÓDULO DE PRONÓSTICO REGIONAL CON CACHÉ (WeatherService) ---
-const weatherCard = document.querySelector('#weather-card');
-const WEATHER_CACHE_KEY = 'rinconada_weather_cache';
-const WEATHER_CACHE_TTL = 30 * 60 * 1000; // 30 minutos de validez en caché de sesión
-
+// --- 9. MÓDULO PROFUNDO DE TELEMETRÍA TERRITORIAL (TerritoryTelemetry) ---
 /**
- * Traduce el código meteorológico WMO de Open-Meteo a texto e icono SVG.
- * @param {number} code - Código WMO numérico
- * @returns {WeatherCondition}
+ * Módulo unificado para los indicadores ambientales y temporales del territorio:
+ * - Pronóstico regional con caché de 30 minutos (Open-Meteo) y traducción de códigos WMO.
+ * - Reloj local sincronizado de La Pacha (America/Bogota, UTC-5) con alineación al segundo :00.
+ * - Observación de intersección única y gestión de ciclo de vida con visibilidad de pestaña.
  */
-function getWeatherInterpretation(code) {
-  if (code === 0) {
-    return {
-      desc: 'Cielo despejado',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#f2ce6c" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
-    };
-  } else if (code <= 3) {
-    return {
-      desc: code === 1 ? 'Mayormente despejado' : (code === 2 ? 'Parcialmente nublado' : 'Nublado'),
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#3676ce" stroke-width="2" stroke-linecap="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>'
-    };
-  } else if (code <= 48) {
-    return {
-      desc: 'Niebla o neblina',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#5c728e" stroke-width="2" stroke-linecap="round"><line x1="3" y1="10" x2="21" y2="10"></line><line x1="3" y1="14" x2="21" y2="14"></line><line x1="5" y1="18" x2="19" y2="18"></line></svg>'
-    };
-  } else if (code <= 67) {
-    return {
-      desc: code <= 55 ? 'Llovizna' : 'Lluvia regional',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#3676ce" stroke-width="2" stroke-linecap="round"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path><line x1="8" y1="19" x2="8" y2="21"></line><line x1="12" y1="19" x2="12" y2="21"></line><line x1="16" y1="19" x2="16" y2="21"></line></svg>'
-    };
-  } else if (code <= 82) {
-    return {
-      desc: 'Chubascos',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#3676ce" stroke-width="2" stroke-linecap="round"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path><line x1="8" y1="19" x2="8" y2="22"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="16" y1="19" x2="16" y2="22"></line></svg>'
-    };
-  } else {
-    return {
-      desc: 'Tormenta eléctrica',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef704f" stroke-width="2" stroke-linecap="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 9 17 15 17 11 23"></polyline></svg>'
-    };
-  }
-}
-
-/**
- * Renderiza el bloque HTML del pronóstico meteorológico regional.
- * @param {number|string} temp - Temperatura en grados Celsius
- * @param {string} desc - Descripción de la condición
- * @param {string} icon - Cadena SVG del icono
- * @param {number|string} humidity - Porcentaje de humedad
- * @param {number|string} wind - Velocidad del viento
- * @returns {void}
- */
-function renderWeatherHTML(temp, desc, icon, humidity, wind) {
-  if (!weatherCard) return;
-  weatherCard.innerHTML = `
-    <div class="weather-main">
-      <div class="weather-temp-group">
-        <div class="weather-temp">${temp}°C</div>
-        <div class="weather-location-highlight">La Pacha, <span>Magdalena</span></div>
-        <div class="weather-desc">${desc}</div>
-      </div>
-      <div class="weather-icon-box" aria-hidden="true">${icon}</div>
-    </div>
-    <div class="weather-sub">
-      <span>💧 Humedad: <strong>${humidity}%</strong></span>
-      <span>💨 Viento: <strong>${wind} km/h</strong></span>
-    </div>
-  `;
-}
-
-function isWeatherPayloadValid(data) {
-  return !!(
-    data &&
-    typeof data === 'object' &&
-    typeof data.temp === 'number' &&
-    Number.isFinite(data.temp) &&
-    typeof data.desc === 'string' &&
-    typeof data.icon === 'string' &&
-    typeof data.humidity === 'number' &&
-    Number.isFinite(data.humidity) &&
-    typeof data.wind === 'number' &&
-    Number.isFinite(data.wind)
-  );
-}
-
-async function loadOpenMeteoWeather() {
-  if (!weatherCard) return;
-
-  // 1. Verificación previa en caché de sesión (0 ms de espera y 0 datos transferidos)
-  const cached = StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, (data) =>
-    isWeatherPayloadValid(data) &&
-    typeof data.timestamp === 'number' &&
-    Date.now() - data.timestamp < WEATHER_CACHE_TTL
-  );
-  if (cached) {
-    renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
-    return;
-  }
-
-  const lat = 9.2579;
-  const lon = -74.2599;
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=America%2FBogota`;
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
-
-  try {
-    const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
-    if (!res.ok) throw new Error('Respuesta no exitosa');
-    const data = await res.json();
-    const current = data && data.current;
-    if (
-      !current ||
-      typeof current.temperature_2m !== 'number' || !Number.isFinite(current.temperature_2m) ||
-      typeof current.relative_humidity_2m !== 'number' || !Number.isFinite(current.relative_humidity_2m) ||
-      typeof current.weather_code !== 'number' || !Number.isFinite(current.weather_code) ||
-      typeof current.wind_speed_10m !== 'number' || !Number.isFinite(current.wind_speed_10m)
-    ) {
-      throw new Error('Datos incompletos');
-    }
-
-    const info = getWeatherInterpretation(current.weather_code);
-    const temp = Math.round(current.temperature_2m);
-    const humidity = Math.round(current.relative_humidity_2m);
-    const wind = Math.round(current.wind_speed_10m);
-
-    // Guardar en caché para visitas posteriores
-    StorageAdapter.session.setJson(WEATHER_CACHE_KEY, {
-      timestamp: Date.now(),
-      temp,
-      humidity,
-      wind,
-      desc: info.desc,
-      icon: info.icon
-    });
-
-    renderWeatherHTML(temp, info.desc, info.icon, humidity, wind);
-  } catch (err) {
-    // Si la red falla pero hay un pronóstico previo en caché, preservarlo
-    const cachedStale = StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, isWeatherPayloadValid);
-    if (cachedStale) {
-      renderWeatherHTML(cachedStale.temp, cachedStale.desc, cachedStale.icon, cachedStale.humidity, cachedStale.wind);
-      return;
-    }
-
-    weatherCard.innerHTML = `
-      <div class="weather-error">
-        <p>Pronóstico no disponible temporalmente.</p>
-      </div>
-    `;
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
-}
-
-const weatherSection = document.querySelector('#clima-regional');
-if (weatherSection && 'IntersectionObserver' in window) {
-  const weatherObserver = new IntersectionObserver((entries) => {
-    if (entries.some(e => e.isIntersecting)) {
-      loadOpenMeteoWeather();
-      weatherObserver.disconnect();
-    }
-  }, { rootMargin: '200px' });
-  weatherObserver.observe(weatherSection);
-} else {
-  loadOpenMeteoWeather();
-}
-
-// --- 9b. MÓDULO DE RELOJ LOCAL DE LA PACHA (PachaClock) ---
-/**
- * Formatea la hora en zona horaria America/Bogota (UTC-5) en formato 12 horas.
- * Utiliza Intl.DateTimeFormat si está disponible o calcula el desfase manual UTC-5.
- * @param {Date} [date]
- * @returns {string}
- */
-function formatBogotaTime(date = new Date()) {
-  try {
-    if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
-      return new Intl.DateTimeFormat('es-CO', {
-        timeZone: 'America/Bogota',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      }).format(date);
-    }
-  } catch (e) {
-    // Si Intl o timeZone falla, recurrir a la hora manual UTC-5
-  }
-  const { hours24, minutes } = getBogotaTimeParts(date);
-  const hours12 = hours24 % 12 || 12;
-  const ampm = hours24 < 12 ? 'a. m.' : 'p. m.';
-  return `${hours12}:${String(minutes).padStart(2, '0')} ${ampm}`;
-}
-
-/**
- * Desglosa la hora y minutos en zona horaria UTC-5 (America/Bogota).
- * @param {Date} [date]
- * @returns {{ hours24: number, minutes: number }}
- */
-function getBogotaTimeParts(date = new Date()) {
-  const hours24 = (date.getUTCHours() - 5 + 24) % 24;
-  const minutes = date.getUTCMinutes();
-  return { hours24, minutes };
-}
-
-/**
- * Obtiene la hora en formato 24 horas (HH:mm) para el atributo datetime de <time>.
- * @param {Date} [date]
- * @returns {string}
- */
-function getBogotaTimeString24(date = new Date()) {
-  const { hours24, minutes } = getBogotaTimeParts(date);
-  return `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-}
-
-const PachaClock = (() => {
+const TerritoryTelemetry = (function() {
+  const WEATHER_CACHE_KEY = 'rinconada_weather_cache';
+  const WEATHER_CACHE_TTL = 30 * 60 * 1000;
+  const weatherCard = typeof document !== 'undefined' ? document.querySelector('#weather-card') : null;
+  const weatherSection = typeof document !== 'undefined' ? document.querySelector('#clima-regional') : null;
+  let clockEl = null;
   let timerId = null;
   let intervalId = null;
-  let clockEl = null;
+  let weatherObserver = null;
 
-  function clearTimers() {
+  // --- MÉTODOS DE RELOJ LOCAL DE LA PACHA ---
+  function getClockElement() {
+    if (!clockEl && typeof document !== 'undefined') {
+      clockEl = document.querySelector('#pacha-clock');
+    }
+    return clockEl;
+  }
+
+  function getBogotaTimeParts(date = new Date()) {
+    const hours24 = (date.getUTCHours() - 5 + 24) % 24;
+    const minutes = date.getUTCMinutes();
+    return { hours24, minutes };
+  }
+
+  function formatBogotaTime(date = new Date()) {
+    try {
+      if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+        return new Intl.DateTimeFormat('es-CO', {
+          timeZone: 'America/Bogota',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }).format(date);
+      }
+    } catch (e) {}
+    const { hours24, minutes } = getBogotaTimeParts(date);
+    const hours12 = hours24 % 12 || 12;
+    const ampm = hours24 < 12 ? 'a. m.' : 'p. m.';
+    return `${hours12}:${String(minutes).padStart(2, '0')} ${ampm}`;
+  }
+
+  function getBogotaTimeString24(date = new Date()) {
+    const { hours24, minutes } = getBogotaTimeParts(date);
+    return `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+
+  function updateClock() {
+    const el = getClockElement();
+    if (!el) return;
+    const now = new Date();
+    el.textContent = formatBogotaTime(now);
+    el.setAttribute('datetime', getBogotaTimeString24(now));
+  }
+
+  function clearClockTimers() {
     if (timerId !== null) {
       clearTimeout(timerId);
       timerId = null;
@@ -1910,72 +1658,193 @@ const PachaClock = (() => {
     }
   }
 
-  function getElement() {
-    if (!clockEl && typeof document !== 'undefined') {
-      clockEl = document.querySelector('#pacha-clock');
-    }
-    return clockEl;
-  }
-
-  function update() {
-    const el = getElement();
-    if (!el) return;
-    const now = new Date();
-    el.textContent = formatBogotaTime(now);
-    el.setAttribute('datetime', getBogotaTimeString24(now));
-  }
-
-  function start() {
-    clearTimers();
-    update();
+  function startClock() {
+    clearClockTimers();
+    updateClock();
     if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
       return;
     }
     const now = new Date();
     const delay = Math.max(50, (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50);
     timerId = setTimeout(() => {
-      update();
-      intervalId = setInterval(update, 60000);
+      updateClock();
+      intervalId = setInterval(updateClock, 60000);
     }, delay);
   }
 
-  function stop() {
-    clearTimers();
+  // --- MÉTODOS DE PRONÓSTICO REGIONAL ---
+  function getWeatherInterpretation(code) {
+    if (code === 0) {
+      return {
+        desc: 'Cielo despejado',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#f2ce6c" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
+      };
+    } else if (code <= 3) {
+      return {
+        desc: code === 1 ? 'Mayormente despejado' : (code === 2 ? 'Parcialmente nublado' : 'Nublado'),
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#3676ce" stroke-width="2" stroke-linecap="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path></svg>'
+      };
+    } else if (code <= 48) {
+      return {
+        desc: 'Niebla o neblina',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#5c728e" stroke-width="2" stroke-linecap="round"><line x1="3" y1="10" x2="21" y2="10"></line><line x1="3" y1="14" x2="21" y2="14"></line><line x1="5" y1="18" x2="19" y2="18"></line></svg>'
+      };
+    } else if (code <= 67) {
+      return {
+        desc: code <= 55 ? 'Llovizna' : 'Lluvia regional',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#3676ce" stroke-width="2" stroke-linecap="round"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path><line x1="8" y1="19" x2="8" y2="21"></line><line x1="12" y1="19" x2="12" y2="21"></line><line x1="16" y1="19" x2="16" y2="21"></line></svg>'
+      };
+    } else if (code <= 82) {
+      return {
+        desc: 'Chubascos',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#3676ce" stroke-width="2" stroke-linecap="round"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path><line x1="8" y1="19" x2="8" y2="22"></line><line x1="12" y1="19" x2="12" y2="22"></line><line x1="16" y1="19" x2="16" y2="22"></line></svg>'
+      };
+    } else {
+      return {
+        desc: 'Tormenta eléctrica',
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef704f" stroke-width="2" stroke-linecap="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"></path><polyline points="13 11 9 17 15 17 11 23"></polyline></svg>'
+      };
+    }
+  }
+
+  function renderWeatherHTML(temp, desc, icon, humidity, wind) {
+    if (!weatherCard) return;
+    weatherCard.innerHTML = `
+      <div class="weather-main">
+        <div class="weather-temp-group">
+          <div class="weather-temp">${temp}°C</div>
+          <div class="weather-location-highlight">La Pacha, <span>Magdalena</span></div>
+          <div class="weather-desc">${desc}</div>
+        </div>
+        <div class="weather-icon-box" aria-hidden="true">${icon}</div>
+      </div>
+      <div class="weather-sub">
+        <span>💧 Humedad: <strong>${humidity}%</strong></span>
+        <span>💨 Viento: <strong>${wind} km/h</strong></span>
+      </div>
+    `;
+  }
+
+  function isWeatherPayloadValid(data) {
+    return Boolean(
+      data &&
+      typeof data.temp === 'number' &&
+      typeof data.desc === 'string' &&
+      typeof data.icon === 'string' &&
+      typeof data.humidity === 'number' &&
+      typeof data.wind === 'number' &&
+      typeof data.timestamp === 'number'
+    );
+  }
+
+  async function loadWeather() {
+    if (!weatherCard) return;
+    const cached = StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, (data) =>
+      isWeatherPayloadValid(data) && (Date.now() - data.timestamp) < WEATHER_CACHE_TTL
+    );
+
+    if (cached) {
+      renderWeatherHTML(cached.temp, cached.desc, cached.icon, cached.humidity, cached.wind);
+      return;
+    }
+
+    const lat = 9.2579;
+    const lon = -74.2599;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=America%2FBogota`;
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
+
+    try {
+      const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const current = data && data.current;
+      if (!current) throw new Error('Respuesta inválida de Open-Meteo');
+
+      const info = getWeatherInterpretation(current.weather_code);
+      const temp = Math.round(current.temperature_2m);
+      const humidity = Math.round(current.relative_humidity_2m);
+      const wind = Math.round(current.wind_speed_10m);
+
+      renderWeatherHTML(temp, info.desc, info.icon, humidity, wind);
+
+      StorageAdapter.session.setJson(WEATHER_CACHE_KEY, {
+        temp, desc: info.desc, icon: info.icon, humidity, wind,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      const cachedStale = StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, isWeatherPayloadValid);
+      if (cachedStale) {
+        renderWeatherHTML(cachedStale.temp, cachedStale.desc, cachedStale.icon, cachedStale.humidity, cachedStale.wind);
+        return;
+      }
+      weatherCard.innerHTML = `
+        <div class="weather-error">
+          <p>Pronóstico no disponible temporalmente.</p>
+        </div>
+      `;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }
+
+  function setupWeatherObserver() {
+    if (weatherSection && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+      weatherObserver = new IntersectionObserver((entries) => {
+        if (entries.some(e => e.isIntersecting)) {
+          loadWeather();
+          if (weatherObserver) weatherObserver.disconnect();
+        }
+      }, { rootMargin: '200px' });
+      weatherObserver.observe(weatherSection);
+    } else {
+      loadWeather();
+    }
   }
 
   function init() {
-    clockEl = null;
-    start();
+    startClock();
+    setupWeatherObserver();
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          startClock();
+        } else {
+          clearClockTimers();
+        }
+      });
+    }
   }
 
   return {
     init,
-    start,
-    stop,
-    update,
-    formatTime: formatBogotaTime,
-    getTime24: getBogotaTimeString24
+    updateClock,
+    getBogotaTime: formatBogotaTime,
+    formatBogotaTime,
+    getBogotaTimeString24,
+    getCachedWeather: () => StorageAdapter.session.getJson(WEATHER_CACHE_KEY, null, isWeatherPayloadValid),
+    fetchWeather: loadWeather
   };
 })();
 
+// Alias de retrocompatibilidad
+const WeatherService = { loadOpenMeteoWeather: TerritoryTelemetry.fetchWeather };
+const PachaClock = TerritoryTelemetry;
+const formatBogotaTime = TerritoryTelemetry.getBogotaTime;
+
 if (typeof window !== 'undefined') {
-  window.PachaClock = PachaClock;
+  window.TerritoryTelemetry = TerritoryTelemetry;
+  window.PachaClock = TerritoryTelemetry;
+  window.WeatherService = WeatherService;
 }
 
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => PachaClock.init());
+    document.addEventListener('DOMContentLoaded', () => TerritoryTelemetry.init());
   } else {
-    PachaClock.init();
+    TerritoryTelemetry.init();
   }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      PachaClock.stop();
-    } else if (document.visibilityState === 'visible') {
-      PachaClock.start();
-    }
-  });
 }
 
 // --- 10. REGISTRO DE SERVICE WORKER ---
