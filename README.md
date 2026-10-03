@@ -29,6 +29,8 @@ Investigación y fuentes: `research/stack-rinconada.md`, `research/diseno-rincon
 
 Con Node.js instalado, ejecutar `node checks.cjs`. No necesita npm, dependencias ni conexión; comprueba historial seguro, sincronización de volumen, enrutamiento de errores de reproducción, estado `inert` del mini-reproductor y caché/offline con simulaciones del DOM y del service worker. La reproducción real, el chat y la experiencia móvil necesitan pruebas en navegador.
 
+`npm test` no abre Chrome, no compara capturas y no mide CLS ni LCP. Para cambios visuales, usar el procedimiento de [verificación de UI con Chrome DevTools MCP](docs/verification.md) y adjuntar sus resultados, condiciones y limitaciones.
+
 Revisión del código y mejoras implementadas: [REVIEW.md](REVIEW.md).
 
 ## Documentos del proyecto

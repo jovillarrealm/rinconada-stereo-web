@@ -1,0 +1,666 @@
+{
+  "environment": {
+    "initialized": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {
+        "logging": {},
+        "tools": {
+          "listChanged": true
+        }
+      },
+      "serverInfo": {
+        "name": "chrome_devtools",
+        "title": "Chrome DevTools MCP server",
+        "version": "1.10.1"
+      }
+    },
+    "baselineRef": "86b91a9d6fec696bde39262c9f87536d96a54767",
+    "node": "v26.7.0",
+    "date": "2026-10-03T03:45:26.517Z",
+    "runs": 3,
+    "profiles": [
+      {
+        "name": "desktop-light",
+        "viewport": "1440x900x1",
+        "theme": "light"
+      },
+      {
+        "name": "desktop-dark",
+        "viewport": "1440x900x1",
+        "theme": "dark"
+      },
+      {
+        "name": "mobile-light",
+        "viewport": "390x844x1,mobile,touch",
+        "theme": "light"
+      },
+      {
+        "name": "mobile-dark",
+        "viewport": "390x844x1,mobile,touch",
+        "theme": "dark"
+      }
+    ],
+    "cpuThrottlingRate": 4,
+    "networkConditions": "Fast 4G",
+    "sw": "404 on test server; no SW cache",
+    "observationMs": 5000,
+    "externalServices": "live, uncontrolled",
+    "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "afterSha256": {
+      "index.html": "9572195dc0815b07e5528d107838ec0c769db22036e73fce3535e56dfa12c6eb",
+      "styles.css": "582bfbef8ef8a9898c36570d2369cd4f4012accb7306d9bb16db067a69b7427c"
+    }
+  },
+  "samples": [
+    {
+      "profile": "desktop-light",
+      "variant": "before",
+      "run": 1,
+      "lcpMs": 1576,
+      "traceLcpMs": 1575,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1576,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-light",
+      "variant": "after",
+      "run": 1,
+      "lcpMs": 1372,
+      "traceLcpMs": 1371,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1372,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-light",
+      "variant": "after",
+      "run": 2,
+      "lcpMs": 1424,
+      "traceLcpMs": 1424,
+      "parentCls": 0,
+      "traceCls": 0.035239929252503764,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 4,
+      "lcpElement": {
+        "ms": 1424,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-light",
+      "variant": "before",
+      "run": 2,
+      "lcpMs": 1132,
+      "traceLcpMs": 1130,
+      "parentCls": 0,
+      "traceCls": 0.03524101001439589,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 5,
+      "lcpElement": {
+        "ms": 1132,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-light",
+      "variant": "before",
+      "run": 3,
+      "lcpMs": 1328,
+      "traceLcpMs": 1328,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1328,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-light",
+      "variant": "after",
+      "run": 3,
+      "lcpMs": 1076,
+      "traceLcpMs": 1074,
+      "parentCls": 0,
+      "traceCls": 0.035239929252503764,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 4,
+      "lcpElement": {
+        "ms": 1076,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "variant": "before",
+      "run": 1,
+      "lcpMs": 1224,
+      "traceLcpMs": 1224,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1224,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "variant": "after",
+      "run": 1,
+      "lcpMs": 1432,
+      "traceLcpMs": 1430,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1432,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "variant": "after",
+      "run": 2,
+      "lcpMs": 1152,
+      "traceLcpMs": 1150,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1152,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "variant": "before",
+      "run": 2,
+      "lcpMs": 1456,
+      "traceLcpMs": 1456,
+      "parentCls": 0,
+      "traceCls": 0.035239929252503764,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 4,
+      "lcpElement": {
+        "ms": 1456,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "variant": "before",
+      "run": 3,
+      "lcpMs": 1448,
+      "traceLcpMs": 1444,
+      "parentCls": 0,
+      "traceCls": 0.035239929252503764,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 4,
+      "lcpElement": {
+        "ms": 1448,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "variant": "after",
+      "run": 3,
+      "lcpMs": 1160,
+      "traceLcpMs": 1158,
+      "parentCls": 0,
+      "traceCls": 0.035233933745540146,
+      "traceClsRounded": 0.04,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 3,
+      "lcpElement": {
+        "ms": 1160,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/locupez.avif",
+        "size": 161658
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "variant": "before",
+      "run": 1,
+      "lcpMs": 1252,
+      "traceLcpMs": 1249,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1252,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "variant": "after",
+      "run": 1,
+      "lcpMs": 1280,
+      "traceLcpMs": 1279,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1280,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "variant": "after",
+      "run": 2,
+      "lcpMs": 1264,
+      "traceLcpMs": 1262,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1264,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "variant": "before",
+      "run": 2,
+      "lcpMs": 1272,
+      "traceLcpMs": 1269,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1272,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "variant": "before",
+      "run": 3,
+      "lcpMs": 1160,
+      "traceLcpMs": 1157,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1160,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "variant": "after",
+      "run": 3,
+      "lcpMs": 1144,
+      "traceLcpMs": 1141,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1144,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "variant": "before",
+      "run": 1,
+      "lcpMs": 1260,
+      "traceLcpMs": 1257,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1260,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "variant": "after",
+      "run": 1,
+      "lcpMs": 1148,
+      "traceLcpMs": 1146,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1148,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "variant": "after",
+      "run": 2,
+      "lcpMs": 1432,
+      "traceLcpMs": 1431,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1432,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "variant": "before",
+      "run": 2,
+      "lcpMs": 1444,
+      "traceLcpMs": 1443,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1444,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "variant": "before",
+      "run": 3,
+      "lcpMs": 1208,
+      "traceLcpMs": 1207,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1208,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/before/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "variant": "after",
+      "run": 3,
+      "lcpMs": 1116,
+      "traceLcpMs": 1115,
+      "parentCls": 0,
+      "traceCls": 0,
+      "traceClsRounded": 0,
+      "mainFrameShiftCount": 0,
+      "childFrameShiftCount": 0,
+      "lcpElement": {
+        "ms": 1116,
+        "tag": "IMG",
+        "id": "",
+        "url": "http://127.0.0.1:60380/after/assets/logo-rinconada.avif",
+        "size": 36456
+      },
+      "overflow": false
+    }
+  ],
+  "profiles": [
+    {
+      "profile": "desktop-light",
+      "lcpBefore": 1328,
+      "lcpAfter": 1372,
+      "lcpDeltaMs": 44,
+      "lcpDeltaPercent": 3.3132530120481896,
+      "lcpBeforeRange": [
+        1132,
+        1576
+      ],
+      "lcpAfterRange": [
+        1076,
+        1424
+      ],
+      "parentClsBefore": 0,
+      "parentClsAfter": 0,
+      "traceClsBeforeRange": [
+        0.04,
+        0.04
+      ],
+      "traceClsAfterRange": [
+        0.04,
+        0.04
+      ],
+      "mainFrameShiftCount": 0,
+      "maxGeometryDelta": 0.015625,
+      "geometryChangesOverPointOnePixel": [],
+      "chatEmojiPreserved": true,
+      "logoVariantsVerified": true,
+      "stickyVisible": true,
+      "overflow": false
+    },
+    {
+      "profile": "desktop-dark",
+      "lcpBefore": 1448,
+      "lcpAfter": 1160,
+      "lcpDeltaMs": -288,
+      "lcpDeltaPercent": -19.889502762430944,
+      "lcpBeforeRange": [
+        1224,
+        1456
+      ],
+      "lcpAfterRange": [
+        1152,
+        1432
+      ],
+      "parentClsBefore": 0,
+      "parentClsAfter": 0,
+      "traceClsBeforeRange": [
+        0.04,
+        0.04
+      ],
+      "traceClsAfterRange": [
+        0.04,
+        0.04
+      ],
+      "mainFrameShiftCount": 0,
+      "maxGeometryDelta": 0.015625,
+      "geometryChangesOverPointOnePixel": [],
+      "chatEmojiPreserved": true,
+      "logoVariantsVerified": true,
+      "stickyVisible": true,
+      "overflow": false
+    },
+    {
+      "profile": "mobile-light",
+      "lcpBefore": 1252,
+      "lcpAfter": 1264,
+      "lcpDeltaMs": 12,
+      "lcpDeltaPercent": 0.9584664536741228,
+      "lcpBeforeRange": [
+        1160,
+        1272
+      ],
+      "lcpAfterRange": [
+        1144,
+        1280
+      ],
+      "parentClsBefore": 0,
+      "parentClsAfter": 0,
+      "traceClsBeforeRange": [
+        0,
+        0
+      ],
+      "traceClsAfterRange": [
+        0,
+        0
+      ],
+      "mainFrameShiftCount": 0,
+      "maxGeometryDelta": 0.015625,
+      "geometryChangesOverPointOnePixel": [],
+      "chatEmojiPreserved": true,
+      "logoVariantsVerified": true,
+      "stickyVisible": true,
+      "overflow": false
+    },
+    {
+      "profile": "mobile-dark",
+      "lcpBefore": 1260,
+      "lcpAfter": 1148,
+      "lcpDeltaMs": -112,
+      "lcpDeltaPercent": -8.888888888888891,
+      "lcpBeforeRange": [
+        1208,
+        1444
+      ],
+      "lcpAfterRange": [
+        1116,
+        1432
+      ],
+      "parentClsBefore": 0,
+      "parentClsAfter": 0,
+      "traceClsBeforeRange": [
+        0,
+        0
+      ],
+      "traceClsAfterRange": [
+        0,
+        0
+      ],
+      "mainFrameShiftCount": 0,
+      "maxGeometryDelta": 0.015625,
+      "geometryChangesOverPointOnePixel": [],
+      "chatEmojiPreserved": true,
+      "logoVariantsVerified": true,
+      "stickyVisible": true,
+      "overflow": false
+    }
+  ]
+}

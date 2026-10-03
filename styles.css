@@ -845,7 +845,31 @@ main > section, #chat, #reproductor { scroll-margin-top: 1.5rem; }
   color: #062b14;
   transform: translateY(-1px);
 }
-.sticky-wa-icon { font-size: 0.88rem; line-height: 1; }
+.track-wa-icon, .sticky-wa-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.track-wa-icon svg {
+  width: 1.125rem;
+  height: 1.0625rem;
+}
+.sticky-wa-icon {
+  font-size: 0.88rem;
+}
+.sticky-wa-icon svg {
+  width: 1.375em;
+  height: 1em;
+}
+.track-wa-icon svg, .sticky-wa-icon svg {
+  display: block;
+  fill: #fff;
+  transition: fill 0.18s ease;
+}
+.track-share-wa-btn:hover .track-wa-icon svg,
+.sticky-wa-btn:hover .sticky-wa-icon svg {
+  fill: #000;
+}
 
 /* Control de volumen compacto en mini-reproductor */
 .sticky-volume-control {
